@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>FALC - Lecture Simplifiée</title>
+
+<style>
+  body { font-family: Arial, sans-serif; margin:0; background:#f4f7f9; }
+  header { background:#333; color:white; padding:10px; display:flex; justify-content:space-between; }
+  .container { display:grid; grid-template-columns:300px 1fr 250px; padding:10px; gap:10px; height:calc(100vh - 60px); }
+  .panel { background:white; border-radius:8px; padding:10px; display:flex; flex-direction:column; overflow:hidden; }
+
+  textarea { width:100%; height:150px; resize:none; padding:10px; font-size:14px; line-height:1.5; }
+
+  .scroll { overflow-y:auto; flex:1; }
+
+  #preview {
+    background:white;
+    padding:10px;
+    font-size:18px;
+    line-height:1.7;
+    border:1px solid #ddd;
+    min-height:400px;
+    text-align:justify;
+    word-spacing:3px;
+  }
+
+  .highlight { background:#f8f8f8; }
+  .muette { color:#a0a0a0; }
+  .complexe { color:#228b22; border-bottom:2px solid #228b22; font-weight:bold; }
+  .word { display:inline; }
+  .active { background:#fff176; }
+
+  .controls button { margin:5px 0; width:100%; padding:8px; cursor:pointer; }
+
+  .sentence-line {
+    width:100%;
+    display:block;
+    margin-bottom:5px;
+  }
+
+  /* pictos */
+  img.picto {
+    width:60px;
+    margin:5px;
+  }
+
+  @media print {
+    header, .panel:not(#preview-panel), textarea, .controls { display:none; }
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <span><strong>FALC – Lecture & Simplification</strong></span>
+  <button onclick="window.print()">📄 PDF / Imprimer</button>
+</header>
+
+<div class="container">
+
+  <div class="panel">
+    <h3>Options</h3>
+    <div class="controls">
+      <button onclick="appliquerCorrection()">Appliquer Correction</button>
+      <button onclick="simplifierTexte()">Simplifier Texte</button>
+      <button onclick="ecouterTexte()">Écouter</button>
+
+      <label class="toggle">
+        <input type="checkbox" id="toggleSons" checked> Sons complexes ON/OFF
+      </label>
+    </div>
+  </div>
+
+  <div id="preview-panel" class="panel scroll">
+    <textarea id="inputText">Maman mange une pomme dans la cuisine. Le chat dort sur le tapis.</textarea>
+    <div id="preview"></div>
+  </div>
+
+  <div class="panel scroll">
+    <h3>Pictogrammes détectés</h3>
+    <div id="pictosAuto"></div>
+  </div>
+
+</div>
+
+<script>
+/* dictionnaire simple */
+const dictSimplification = {
+  "résidence":"maison","automobile":"voiture","acquérir":"acheter","consommer":"manger",
+  "observer":"regarder","demeurer":"rester","somnoler":"dormir"
+};
+
+/* banque enrichie */
+const nomsCommun = [
+  "chat","chien","maison","pomme","livre","tapis","table","enfant","maman","papa",
+  "femme","homme","voiture","école","cuisine","arbre","soleil","nourriture","eau",
+  "porte","chaise","fenêtre","vélo","route","bus","train","docteur","professeur"
+];
+
+/* heuristique */
+function estNomCommun(mot){
+  const m = mot.toLowerCase();
+
+  if(nomsCommun.includes(m)) return true;
+
+  if(m.endsWith("e") || m.endsWith("on") || m.endsWith("age")) return true;
+
+  return false;
+}
+
+/* sons complexes */
+const sons = ["an","en","ou","in","ai","ei","on","oi","ch","au","eau"];
+
+/* muettes */
+const muettes = ["ent","es","e","t","s","x"];
+
+/* détecter noms */
+function detecterNoms(texte) {
+  const mots = texte.toLowerCase().split(/\W+/);
+  const trouvés = mots.filter(m => estNomCommun(m));
+  return [...new Set(trouvés)];
+}
+
+/* simplification */
+function simplifierTexte() {
+  let texte = document.getElementById("inputText").value;
+
+  Object.keys(dictSimplification).forEach(c=>{
+    const reg = new RegExp(`\\b${c}\\b`, 'gi');
+    texte = texte.replace(reg, dictSimplification[c]);
+  });
+
+  texte = texte.replace(/,/g,". ").replace(/;/g,". ");
+
+  document.getElementById("inputText").value = texte;
+  appliquerCorrection();
+}
+
+/* coloration */
+function coloriserMot(mot) {
+  let m = mot;
+
+  if(document.getElementById("toggleSons").checked){
+    const regSons = new RegExp(`(${sons.join('|')})`, 'gi');
+    m = m.replace(regSons, `<span class="complexe">$1</span>`);
+  }
+  const regMuettes = new RegExp(`(${muettes.join('|')})$`, "i");
+  m = m.replace(regMuettes, `<span class="muette">$1</span>`);
+
+  return m;
+}
+
+async function appliquerCorrection() {
+  const texte = document.getElementById("inputText").value;
+  const lignes = texte.split(/[\.\n!\?]/).filter(l=>l.trim() !== "");
+
+  const preview = document.getElementById("preview");
+  const pictosDiv = document.getElementById("pictosAuto");
+
+  preview.innerHTML = "";
+  pictosDiv.innerHTML = "";
+
+  const noms = detecterNoms(texte);
+
+  for(const n of noms){
+    try{
+      const res = await fetch(`https://api.arasaac.org/api/pictograms/fr/search/${n}`);
+      const data = await res.json();
+      if(data[0]){
+        pictosDiv.innerHTML +=
+          `<div><strong>${n}</strong><br><img class="picto" src="https://api.arasaac.org/api/pictograms/${data[0]._id}"></div>`;
+      }
+    }catch(e){}
+  }
+
+  lignes.forEach((ligne)=>{
+    const div = document.createElement("span");
+    div.className="sentence-line";
+
+    const mots = ligne.trim().split(" ");
+    mots.forEach((m)=>{
+      div.innerHTML += `<span class="word">${coloriserMot(m)} </span>`;
+    });
+
+    preview.appendChild(div);
+  });
+}
+
+/* lecture vocale plus apaisante */
+function ecouterTexte() {
+  const texte = document.getElementById("inputText").value;
+  const utt = new SpeechSynthesisUtterance(texte);
+
+  utt.lang="fr-FR";
+  utt.rate=0.8;
+  utt.pitch=0.7;
+
+  const voix = speechSynthesis.getVoices()
+    .find(v => v.lang === "fr-FR" && v.name.toLowerCase().includes("male"))
+    || speechSynthesis.getVoices().find(v => v.lang === "fr-FR");
+
+  if(voix) utt.voice = voix;
+
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+}
+
+appliquerCorrection();
+</script>
+
+</body>
+</html>

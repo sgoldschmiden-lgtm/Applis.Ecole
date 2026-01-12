@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Lecture ULIS - Base Complète</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/open-dyslexic.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'OpenDyslexic', sans-serif; 
+            text-align: center; 
+            background-color: #f8f9fa; 
+            color: #2c3e50; 
+            padding: 10px;
+        }
+
+        .screen { display: none; }
+        .active { display: block; }
+
+        .card { 
+            font-size: 80px; width: 90%; max-width: 700px; height: 350px; 
+            background: white; margin: 15px auto; border-radius: 30px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 8px solid #ddd;
+            padding: 20px; word-break: break-all;
+        }
+
+        /* Couleurs Céline Alvarez */
+        .vowel { color: #e74c3c; border-color: #fadbd8; } /* Rouge pour voyelles et sons complexes */
+        .consonant { color: #3498db; border-color: #d6eaf8; } /* Bleu pour consonnes */
+        .silent { color: #bdc3c7; } /* Gris pour lettres muettes */
+
+        .btn-grid { display: grid; gap: 10px; max-width: 500px; margin: 0 auto; }
+        button { 
+            padding: 18px; font-size: 20px; cursor: pointer; border-radius: 15px; 
+            border: none; font-family: 'OpenDyslexic', sans-serif; transition: 0.2s;
+        }
+        
+        .btn-lvl1 { background: #e74c3c; color: white; }
+        .btn-lvl2 { background: #3498db; color: white; }
+        .btn-lvl3 { background: #f1c40f; color: white; }
+        .btn-action { background: #2ecc71; color: white; }
+        .btn-audio { background: #9b59b6; color: white; width: 80px; }
+        .btn-home { background: #7f8c8d; color: white; margin-top: 20px; }
+
+        #timer { font-size: 2rem; color: #e67e22; font-weight: bold; }
+        #scoreDisplay { font-size: 1.2rem; color: #27ae60; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="menuScreen" class="screen active">
+        <h1>Apprentissage de la Lecture</h1>
+        <p>Sélectionne ton défi :</p>
+        <div class="btn-grid">
+            <button class="btn-lvl1" onclick="setupGame(1)">1. Tous les Sons 🍎</button>
+            <button class="btn-lvl2" onclick="setupGame(2)">2. Syllabes (CV, VC, CCV) 🚂</button>
+            <button class="btn-lvl3" onclick="setupGame(3)">3. 100 Mots Flash 📖</button>
+        </div>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <div id="timer">Prêt ?</div>
+        <div id="scoreDisplay"></div>
+        <div id="flashcard" class="card"></div>
+
+        <div style="display: flex; justify-content: center; gap: 15px;">
+            <button class="btn-audio" onclick="hearSound()">🔊</button>
+            <button id="nextBtn" class="btn-action" style="display:none; min-width: 200px;" onclick="nextCard()">Suivant ➔</button>
+        </div>
+        
+        <button id="startBtn" class="btn-action" style="width: 280px; margin-top: 15px;" onclick="startChallenge()">🚀 Lancer le défi !</button>
+        <br>
+        <button class="btn-home" onclick="goHome()">🏠 Menu</button>
+    </div>
+
+    <script>
+        const data = {
+            // NIVEAU 1 : LISTE EXHAUSTIVE DES SONS
+            1: [
+                {l: 'a', t: 'v'}, {l: 'e', t: 'v'}, {l: 'i', t: 'v'}, {l: 'o', t: 'v'}, {l: 'u', t: 'v'}, {l: 'y', t: 'v'},
+                {l: 's', t: 'c'}, {l: 'f', t: 'c'}, {l: 'l', t: 'c'}, {l: 'm', t: 'c'}, {l: 'r', t: 'c'}, {l: 'v', t: 'c'}, {l: 'j', t: 'c'}, {l: 'n', t: 'c'}, {l: 'z', t: 'c'},
+                {l: 'p', t: 'c'}, {l: 't', t: 'c'}, {l: 'k', t: 'c'}, {l: 'b', t: 'c'}, {l: 'd', t: 'c'}, {l: 'g', t: 'c'},
+                {l: 'ch', t: 'c'}, {l: 'gn', t: 'c'}, {l: 'ph', t: 'c'},
+                {l: 'ou', t: 'v'}, {l: 'an', t: 'v'}, {l: 'am', t: 'v'}, {l: 'on', t: 'v'}, {l: 'om', t: 'v'}, {l: 'in', t: 'v'}, {l: 'im', t: 'v'}, 
+                {l: 'ai', t: 'v'}, {l: 'ei', t: 'v'}, {l: 'oi', t: 'v'}, {l: 'eu', t: 'v'}, {l: 'au', t: 'v'}, {l: 'eau', t: 'v'}, {l: 'un', t: 'v'}
+            ],
+            // NIVEAU 2 : DÉCLINAISONS SYLLABIQUES
+            2: [
+                // CV & Sons complexes
+                'ba','bi','bo','bu','be','bou','bai','bin','ban','boi','bon',
+                'fa','fi','fo','fu','fou','fai','fin','fan','foi','fon',
+                'ma','mi','mo','mu','mou','mai','min','man','moi','mon',
+                'la','li','lo','lu','lou','lai','lin','lan','loi','lon',
+                'cha','chi','cho','chu','chou','chai','chin','chan','choi',
+                // Inversées (VC)
+                'ab','ub','ob','ib','oub','aib','al','ul','ol','il','ar','ur','or',
+                'as','us','os','is','af','if','an','in','on','am','im',
+                // CCV (Consonne-Consonne-Voyelle)
+                'pla','plu','pli','plo','ple','flou','flai','fli','flo','fla',
+                'bra','bri','bro','bru','bre','brou','brai','bran',
+                'cro','cra','cru','cri','cre','trou','trai','tro','tri','tra',
+                'gro','gra','gri','gru','gre','prou','prai','pro','pri','pra'
+            ],
+            // NIVEAU 3 : 100 MOTS FLASH EXISTANTS (p1: prononcé, p2: muet)
+            3: [
+                {p1: 'papa', p2: ''}, {p1: 'maman', p2: ''}, {p1: 'vélo', p2: ''}, {p1: 'moto', p2: ''}, {p1: 'tapi', p2: 's'},
+                {p1: 'cha', p2: 't'}, {p1: 'ra', p2: 't'}, {p1: 'lapin', p2: ''}, {p1: 'ami', p2: ''}, {p1: 'balle', p2: ''},
+                {p1: 'lou', p2: 'p'}, {p1: 'souri', p2: 's'}, {p1: 'mouch', p2: 'e'}, {p1: 'vach', p2: 'e'}, {p1: 'cochon', p2: ''},
+                {p1: 'canar', p2: 'd'}, {p1: 'mouton', p2: ''}, {p1: 'poul', p2: 'e'}, {p1: 'cheval', p2: ''}, {p1: 'panda', p2: ''},
+                {p1: 'fourmi', p2: ''}, {p1: 'tortu', p2: 'e'}, {p1: 'giraf', p2: 'e'}, {p1: 'lion', p2: ''}, {p1: 'aigl', p2: 'e'},
+                {p1: 'mang', p2: 'ue'}, {p1: 'noi', p2: 'x'}, {p1: 'poir', p2: 'e'}, {p1: 'pêch', p2: 'e'}, {p1: 'ananas', p2: ''},
+                {p1: 'tabl', p2: 'e'}, {p1: 'chèvr', p2: 'e'}, {p1: 'li', p2: 't'}, {p1: 'armoir', p2: 'e'}, {p1: 'loupe', p2: ''},
+                {p1: 'stylo', p2: ''}, {p1: 'livr', p2: 'e'}, {p1: 'sac', p2: ''}, {p1: 'cahier', p2: ''}, {p1: 'colle', p2: ''},
+                {p1: 'voitur', p2: 'e'}, {p1: 'ballon', p2: ''}, {p1: 'jouet', p2: ''}, {p1: 'poupé', p2: 'e'}, {p1: 'train', p2: ''},
+                {p1: 'bleu', p2: ''}, {p1: 'vert', p2: ''}, {p1: 'jaune', p2: ''}, {p1: 'vélo', p2: ''}, {p1: 'noir', p2: ''},
+                {p1: 'peti', p2: 't'}, {p1: 'gran', p2: 'd'}, {p1: 'gro', p2: 's'}, {p1: 'for', p2: 't'}, {p1: 'froi', p2: 'd'},
+                {p1: 'chau', p2: 'd'}, {p1: 'joli', p2: ''}, {p1: 'rapid', p2: 'e'}, {p1: 'calm', p2: 'e'}, {p1: 'trist', p2: 'e'},
+                {p1: 'soleil', p2: ''}, {p1: 'lun', p2: 'e'}, {p1: 'éclair', p2: ''}, {p1: 'plui', p2: 'e'}, {p1: 'ven', p2: 't'},
+                {p1: 'ventr', p2: 'e'}, {p1: 'fleur', p2: ''}, {p1: 'arbr', p2: 'e'}, {p1: 'herb', p2: 'e'}, {p1: 'forê', p2: 't'},
+                {p1: 'main', p2: ''}, {p1: 'pied', p2: ''}, {p1: 'têt', p2: 'e'}, {p1: 'bra', p2: 's'}, {p1: 'coud', p2: 'e'},
+                {p1: 'bouch', p2: 'e'}, {p1: 'yeu', p2: 'x'}, {p1: 'oreill', p2: 'e'}, {p1: 'cuiss', p2: 'e'}, {p1: 'do', p2: 's'},
+                {p1: 'maison', p2: ''}, {p1: 'port', p2: 'e'}, {p1: 'toi', p2: 't'}, {p1: 'ru', p2: 'e'}, {p1: 'rout', p2: 'e'},
+                {p1: 'écol', p2: 'e'}, {p1: 'class', p2: 'e'}, {p1: 'bureau', p2: ''}, {p1: 'peintr', p2: 'e'}, {p1: 'docteur', p2: ''},
+                {p1: 'boulangeri', p2: 'e'}, {p1: 'facteur', p2: ''}, {p1: 'soup', p2: 'e'}, {p1: 'pain', p2: ''}, {p1: 'lai', p2: 't'},
+                {p1: 'eau', p2: ''}, {p1: 'rateau', p2: ''}, {p1: 'chocola', p2: 't'}, {p1: 'sucr', p2: 'e'}, {p1: 'sel', p2: ''}
+            ]
+        };
+
+        let currentLevel = 1;
+        let currentItem = {};
+        let score = 0;
+        let timeLeft = 30;
+        let timerActive = false;
+
+        function setupGame(lvl) {
+            currentLevel = lvl;
+            score = 0;
+            document.getElementById('menuScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('timer').textContent = "Niveau " + lvl;
+            document.getElementById('startBtn').style.display = "inline-block";
+            document.getElementById('nextBtn').style.display = "none";
+            pickRandomItem();
+        }
+
+        function pickRandomItem() {
+            const list = data[currentLevel];
+            currentItem = list[Math.floor(Math.random() * list.length)];
+            const card = document.getElementById('flashcard');
+            
+            if (currentLevel === 1) {
+                card.innerHTML = currentItem.l;
+                card.className = "card " + (currentItem.t === 'v' ? 'vowel' : 'consonant');
+            } else if (currentLevel === 2) {
+                card.innerHTML = currentItem;
+                card.className = "card";
+                card.style.color = "#2c3e50";
+            } else {
+                card.className = "card";
+                card.style.color = "#2c3e50";
+                card.style.fontSize = "60px";
+                card.innerHTML = `<span>${currentItem.p1}</span><span class="silent">${currentItem.p2}</span>`;
+            }
+        }
+
+        function hearSound() {
+            let text = "";
+            if (currentLevel === 1) text = currentItem.l;
+            else if (currentLevel === 2) text = currentItem;
+            else text = currentItem.p1 + currentItem.p2;
+            
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'fr-FR';
+            msg.rate = 0.55;
+            window.speechSynthesis.speak(msg);
+        }
+
+        function startChallenge() {
+            score = 0;
+            timeLeft = 30;
+            timerActive = true;
+            document.getElementById('startBtn').style.display = "none";
+            document.getElementById('nextBtn').style.display = "inline-block";
+            document.getElementById('scoreDisplay').textContent = "Score : 0";
+            
+            const interval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = "Temps : " + timeLeft + "s";
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function nextCard() {
+            if (timerActive) {
+                score++;
+                document.getElementById('scoreDisplay').textContent = "Score : " + score;
+            }
+            pickRandomItem();
+        }
+
+        function endGame() {
+            timerActive = false;
+            document.getElementById('timer').textContent = "FIN DU DÉFI !";
+            document.getElementById('nextBtn').style.display = "none";
+            document.getElementById('startBtn').style.display = "inline-block";
+            document.getElementById('startBtn').textContent = "Recommencer";
+            confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+        }
+
+        function goHome() {
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('menuScreen').classList.add('active');
+            window.speechSynthesis.cancel();
+        }
+    </script>
+</body>
+</html>

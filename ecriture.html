@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu d'Écriture ULIS</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --success: #48BB78;
+            --error: #F56565;
+            --warning: #ED8936;
+            --bg: #F0F4F8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+        }
+
+        .hidden { display: none; }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            margin: 10px;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .btn-menu { background: var(--primary); color: white; }
+        .btn-valider { background: var(--success); color: white; margin-top: 20px; box-shadow: 0 4px #2F855A; }
+        .btn-audio { 
+            background: var(--warning); 
+            color: white; 
+            font-size: 3rem; 
+            border-bottom: 6px solid #C05621; 
+            border-radius: 50%; 
+            width: 120px; 
+            height: 120px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-audio:active { border-bottom: 0px; transform: translateY(6px); }
+        .btn-quit { background: #A0AEC0; color: white; font-size: 0.9rem; padding: 10px 20px; }
+
+        .image-display { font-size: 100px; margin: 20px 0; }
+
+        .letter-inputs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        select {
+            font-size: 1.8rem;
+            padding: 5px;
+            border: 3px solid #CBD5E0;
+            border-radius: 8px;
+            background: #EDF2F7;
+            text-align: center;
+            width: 55px;
+            height: 65px;
+        }
+
+        .feedback { font-size: 1.6rem; margin: 15px; font-weight: bold; min-height: 2em; }
+        .score-final { font-size: 6rem; color: var(--primary); margin: 20px 0; font-weight: bold; }
+        
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #EEE;
+            padding-bottom: 10px;
+        }
+        .word-reveal { font-size: 2.5rem; letter-spacing: 8px; color: var(--primary); font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="screen-menu">
+        <h1>Atelier d'Écriture</h1>
+        <button class="btn btn-menu" onclick="startLevel(1)">Niveau 1 : Images 🖼️</button>
+        <button class="btn btn-menu" onclick="startLevel(2)">Niveau 2 : Dictée 🎧</button>
+    </div>
+
+    <div id="screen-game" class="hidden">
+        <div class="nav-header">
+            <button class="btn btn-quit" onclick="confirmQuit()">✖ Menu</button>
+            <div id="question-counter">Question 1/10</div>
+            <div id="level-badge"></div>
+        </div>
+        
+        <div id="display-area"></div>
+        <div id="input-area" class="letter-inputs"></div>
+        <div id="feedback-area" class="feedback"></div>
+        
+        <button id="btn-valider" class="btn btn-valider" onclick="checkAnswer()">VALIDER</button>
+        <button id="btn-next" class="btn btn-menu hidden" onclick="nextQuestion()">CONTINUER</button>
+    </div>
+
+    <div id="screen-result" class="hidden">
+        <h2>Score Final :</h2>
+        <div class="score-final" id="final-score">0/10</div>
+        <button class="btn btn-menu" onclick="showMenu()">Changer de niveau</button>
+        <button class="btn btn-menu" onclick="restartLevel()">Recommencer</button>
+    </div>
+</div>
+
+<script>
+    const alphabet = ["", "a", "à", "â", "b", "c", "ç", "d", "e", "é", "è", "ê", "ë", "f", "g", "h", "i", "î", "ï", "j", "k", "l", "m", "n", "o", "ô", "p", "q", "r", "s", "t", "u", "ù", "û", "v", "w", "x", "y", "z"];
+    
+    // Les listes de mots (abrégées pour l'exemple, mais vous pouvez remettre les 100 de la version précédente)
+    const level1Words = [
+        {word: "chat", icon: "🐱"}, {word: "chien", icon: "🐶"}, {word: "vélo", icon: "🚲"}, {word: "soleil", icon: "☀️"},
+        {word: "pomme", icon: "🍎"}, {word: "banane", icon: "🍌"}, {word: "maison", icon: "🏠"}, {word: "école", icon: "🏫"},
+        {word: "fleur", icon: "🌸"}, {word: "avion", icon: "✈️"}, {word: "train", icon: "🚆"}, {word: "bus", icon: "🚌"}
+    ];
+
+    const level2Words = [
+        "lundi", "demain", "toujours", "vacances", "beaucoup", "après", "école", "manger", "petit", "merci", "classe", "janvier"
+    ];
+
+    let currentLevel = 0, currentQuestionIndex = 0, score = 0, currentWord = "", sessionWords = [];
+
+    // FONCTION CRUCIALE : Prononciation robuste
+    function speakWord(word) {
+        // 1. On stoppe tout ce qui est en cours
+        window.speechSynthesis.cancel();
+
+        // 2. Petit délai pour laisser le navigateur "souffler"
+        setTimeout(() => {
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 0.6;
+            
+            // On force le moteur à parler
+            window.speechSynthesis.speak(utterance);
+        }, 50);
+    }
+
+    function startLevel(lvl) {
+        currentLevel = lvl;
+        currentQuestionIndex = 0;
+        score = 0;
+        let base = lvl === 1 ? [...level1Words] : [...level2Words];
+        sessionWords = base.sort(() => 0.5 - Math.random()).slice(0, 10);
+        
+        document.getElementById('screen-menu').classList.add('hidden');
+        document.getElementById('screen-result').classList.add('hidden');
+        document.getElementById('screen-game').classList.remove('hidden');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        const feedback = document.getElementById('feedback-area');
+        feedback.innerHTML = "";
+        document.getElementById('btn-valider').classList.remove('hidden');
+        document.getElementById('btn-next').classList.add('hidden');
+        
+        let data = sessionWords[currentQuestionIndex];
+        currentWord = (currentLevel === 1 ? data.word : data).toLowerCase();
+        
+        document.getElementById('level-badge').innerText = currentLevel === 1 ? "IMAGE 🖼️" : "DICTÉE 🎧";
+        document.getElementById('question-counter').innerText = `Mot ${currentQuestionIndex + 1} / 10`;
+        
+        const displayArea = document.getElementById('display-area');
+        if (currentLevel === 1) {
+            displayArea.innerHTML = `<div class="image-display">${data.icon}</div>`;
+        } else {
+            // Le bouton audio appelle directement speakWord avec le mot actuel
+            displayArea.innerHTML = `
+                <button class="btn btn-audio" id="audioBtn">🔊</button>
+                <p style="font-weight:bold">Clique sur le bouton pour écouter</p>
+            `;
+            document.getElementById('audioBtn').addEventListener('click', () => speakWord(currentWord));
+            // Prononciation automatique au chargement de la question
+            speakWord(currentWord);
+        }
+
+        const inputArea = document.getElementById('input-area');
+        inputArea.innerHTML = "";
+        [...currentWord].forEach((char) => {
+            if (char === " " || char === "-" || char === "'") {
+                const space = document.createElement('div');
+                space.style.width = "20px";
+                space.innerText = char;
+                space.style.fontSize = "2rem";
+                inputArea.appendChild(space);
+            } else {
+                const select = document.createElement('select');
+                alphabet.forEach(lettre => {
+                    const opt = document.createElement('option');
+                    opt.value = lettre;
+                    opt.innerText = lettre;
+                    select.appendChild(opt);
+                });
+                inputArea.appendChild(select);
+            }
+        });
+    }
+
+    function checkAnswer() {
+        const selects = document.querySelectorAll('#input-area select');
+        let userWord = "";
+        let selectIdx = 0;
+        
+        [...currentWord].forEach(char => {
+            if (char === " " || char === "-" || char === "'") userWord += char;
+            else { userWord += selects[selectIdx].value; selectIdx++; }
+        });
+
+        const feedback = document.getElementById('feedback-area');
+        if (userWord === currentWord) {
+            score++;
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            feedback.innerHTML = `<span style="color: var(--success)">BRAVO !</span>`;
+        } else {
+            feedback.innerHTML = `
+                <div style="color: var(--error)">C'était :</div>
+                <div class="word-reveal">${currentWord.toUpperCase()}</div>
+            `;
+        }
+        document.getElementById('btn-valider').classList.add('hidden');
+        document.getElementById('btn-next').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < 10) loadQuestion();
+        else showResult();
+    }
+
+    function confirmQuit() {
+        if(confirm("Revenir au menu ?")) showMenu();
+    }
+
+    function showResult() {
+        document.getElementById('screen-game').classList.add('hidden');
+        document.getElementById('screen-result').classList.remove('hidden');
+        document.getElementById('final-score').innerText = `${score} / 10`;
+    }
+
+    function showMenu() {
+        window.speechSynthesis.cancel();
+        document.getElementById('screen-game').classList.add('hidden');
+        document.getElementById('screen-result').classList.add('hidden');
+        document.getElementById('screen-menu').classList.remove('hidden');
+    }
+
+    function restartLevel() { startLevel(currentLevel); }
+</script>
+</body>
+</html>
