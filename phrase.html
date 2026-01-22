@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse Grammaticale ULIS - Sens des phrases</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --primary: #4a90e2; --success: #2ecc71; --error: #e74c3c; --bg: #fdfdfd; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { max-width: 950px; width: 100%; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; }
+        
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		.phrase-zone { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 40px 0; }
+        .word-box { border: 3px solid #f0f0f0; border-radius: 15px; padding: 15px; cursor: pointer; min-width: 100px; background: #fff; transition: 0.2s; }
+        .word-box.selected { border-color: var(--primary); background: #f0f7ff; transform: translateY(-3px); }
+        .word-text { font-size: 1.6rem; font-weight: bold; display: block; margin-bottom: 8px; color: #333; }
+        .nature-icon { height: 60px; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 10px; }
+        .nature-icon img { max-height: 50px; }
+
+        .palette { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin: 25px 0; }
+        .nature-btn { border: 2px solid #eee; border-radius: 15px; padding: 10px; cursor: pointer; background: white; width: 120px; box-shadow: 0 4px 0 #eee; }
+        .nature-btn:active { transform: translateY(2px); box-shadow: none; }
+        .nature-btn img { width: 45px; height: 45px; display: block; margin: 0 auto 5px; }
+        .nature-btn span { font-weight: bold; font-size: 0.85rem; color: #555; }
+
+        .btn-audio { background: #5d6d7e; color: white; border: none; padding: 10px 20px; border-radius: 50px; cursor: pointer; font-size: 1rem; margin-bottom: 10px; }
+        .btn-valider { background: var(--success); color: white; border: none; padding: 18px 40px; border-radius: 50px; font-size: 1.3rem; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        
+        #feedback { margin-top: 25px; padding: 20px; border-radius: 15px; display: none; line-height: 1.6; }
+        .error { background: #fff2f2; border: 2px solid #ffcfcf; color: #c0392b; }
+        .success { background: #f0fff4; border: 2px solid #c6f6d5; color: #27ae60; font-size: 1.4rem; }
+    </style>
+</head>
+<body>
+   <a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+	<div class="container">
+		<button class="btn-audio" onclick="parlerPhrase()">🔊 Écouter la phrase entière</button>
+		<div class="phrase-zone" id="phraseDisplay"></div>
+		<div class="palette">
+			<div class="nature-btn" onclick="attribuer('det')"><img src="images/det.png" alt=""><span>Déterminant</span></div>
+			<div class="nature-btn" onclick="attribuer('nom')"><img src="images/nom.png" alt=""><span>Nom</span></div>
+			<div class="nature-btn" onclick="attribuer('adj')"><img src="images/adj.png" alt=""><span>Adjectif</span></div>
+			<div class="nature-btn" onclick="attribuer('verbe')"><img src="images/verbe.png" alt=""><span>Verbe</span></div>
+		</div>
+		<button class="btn-valider" onclick="verifier()">Valider mes réponses</button>
+		<div id="feedback"></div>
+	</div>
+
+	<script>
+		const banque = {
+			det: [
+				{ m: "le", f: "la", mp: "les", fp: "les" },
+				{ m: "un", f: "une", mp: "des", fp: "des" },
+				{ m: "mon", f: "ma", mp: "mes", fp: "mes" }
+			],
+			noms: [
+				{ m: "chat", f: "chatte", mp: "chats", fp: "chattes", type: "vivant" },
+				{ m: "chien", f: "chienne", mp: "chiens", fp: "chiennes", type: "vivant" },
+				{ m: "enfant", f: "enfant", mp: "enfants", fp: "enfants", type: "vivant" },
+				{ m: "ballon", f: "balle", mp: "ballons", fp: "balles", type: "objet" },
+				{ m: "vélo", f: "voiture", mp: "vélos", fp: "voitures", type: "objet" }
+			],
+			// Adjectifs placés AVANT le nom
+			adjAvant: [
+				{ m: "petit", f: "petite", mp: "petits", fp: "petites", cible: "tout" },
+				{ m: "grand", f: "grande", mp: "grands", fp: "grandes", cible: "tout" },
+				{ m: "joli", f: "jolie", mp: "jolis", fp: "jolies", cible: "tout" }
+			],
+			// Adjectifs placés APRÈS le nom
+			adjApres: [
+				{ m: "bleu", f: "bleue", mp: "bleus", fp: "bleues", cible: "objet" },
+				{ m: "vert", f: "verte", mp: "verts", fp: "vertes", cible: "objet" },
+				{ m: "gentil", f: "gentille", mp: "gentils", fp: "gentilles", cible: "vivant" },
+				{ m: "fort", f: "forte", mp: "forts", fp: "fortes", cible: "vivant" }
+			],
+			verbes: [
+				{ s: "regarde", p: "regardent" },
+				{ s: "cherche", p: "cherchent" },
+				{ s: "attrape", p: "attrapent" },
+				{ s: "pousse", p: "poussent" }
+			]
+		};
+
+		const aides = {
+			verbe: "Le verbe est le mot qui indique l'action (bouger, courir, prendre).",
+			nom: "Le nom est une chose, une personne, un animal, un prénom ou un lieu.",
+			det: "Le déterminant est un petit mot qui accompagne le nom (le, la, un, ce...).",
+			adj: "L'adjectif donne une information sur le nom (gentil, fort, bleu...)."
+		};
+
+		let phraseActuelle = [];
+		let reponsesEleve = [];
+		let indexSelectionne = null;
+
+		function choisirAleatoire(liste) { return liste[Math.floor(Math.random() * liste.length)]; }
+
+		function genererPhrase() {
+			const g1 = Math.random() > 0.5 ? 'm' : 'f';
+			const n1 = Math.random() > 0.5 ? '' : 'p';
+			const accordSujet = g1 + n1;
+
+			const d1 = choisirAleatoire(banque.det);
+			const nomSujet = choisirAleatoire(banque.noms);
+			
+			// Choisir un adjectif qui a du sens pour le sujet
+			const toutesAdjSujet = [...banque.adjAvant, ...banque.adjApres].filter(a => a.cible === "tout" || a.cible === nomSujet.type);
+			const adjSujet = choisirAleatoire(toutesAdjSujet);
+			const estAvant = banque.adjAvant.includes(adjSujet);
+
+			const v = choisirAleatoire(banque.verbes);
+
+			const d2 = choisirAleatoire(banque.det);
+			const nomObj = choisirAleatoire(banque.noms);
+
+			// Construction de la phrase
+			phraseActuelle = [];
+			phraseActuelle.push({ word: d1[accordSujet], nature: 'det' });
+			
+			if (estAvant) {
+				phraseActuelle.push({ word: adjSujet[accordSujet], nature: 'adj' });
+				phraseActuelle.push({ word: nomSujet[accordSujet], nature: 'nom' });
+			} else {
+				phraseActuelle.push({ word: nomSujet[accordSujet], nature: 'nom' });
+				phraseActuelle.push({ word: adjSujet[accordSujet], nature: 'adj' });
+			}
+
+			phraseActuelle.push({ word: n1 === 'p' ? v.p : v.s, nature: 'verbe' });
+			phraseActuelle.push({ word: d2['m'], nature: 'det' }); // Simplifié pour le complément
+			phraseActuelle.push({ word: nomObj['m'], nature: 'nom' });
+
+			phraseActuelle[0].word = phraseActuelle[0].word.charAt(0).toUpperCase() + phraseActuelle[0].word.slice(1);
+			reponsesEleve = Array(phraseActuelle.length).fill(null);
+			afficherPhrase();
+		}
+
+		function afficherPhrase() {
+			const display = document.getElementById('phraseDisplay');
+			display.innerHTML = "";
+			phraseActuelle.forEach((item, i) => {
+				const div = document.createElement('div');
+				div.className = 'word-box';
+				div.id = `box-${i}`;
+				div.onclick = () => {
+					indexSelectionne = i;
+					document.querySelectorAll('.word-box').forEach(b => b.classList.remove('selected'));
+					div.classList.add('selected');
+				};
+				div.innerHTML = `<span class="word-text">${item.word}</span><div class="nature-icon" id="icon-${i}">?</div>`;
+				display.appendChild(div);
+			});
+			document.getElementById('feedback').style.display = "none";
+		}
+
+		function attribuer(nature) {
+			if (indexSelectionne === null) return;
+			reponsesEleve[indexSelectionne] = nature;
+			document.getElementById(`icon-${indexSelectionne}`).innerHTML = `<img src="images/${nature}.png">`;
+		}
+
+		function parler(texte) {
+			window.speechSynthesis.cancel();
+			const u = new SpeechSynthesisUtterance(texte);
+			u.lang = 'fr-FR';
+			u.rate = 0.85;
+			window.speechSynthesis.speak(u);
+		}
+
+		function parlerPhrase() { parler(phraseActuelle.map(w => w.word).join(' ')); }
+
+		function verifier() {
+			const feedback = document.getElementById('feedback');
+			if (reponsesEleve.includes(null)) { alert("Termine d'abord l'analyse !"); return; }
+
+			let erreurIdx = reponsesEleve.findIndex((r, i) => r !== phraseActuelle[i].nature);
+
+			if (erreurIdx === -1) {
+				feedback.innerHTML = "🌟 Bravo ! C'est une phrase parfaite !";
+				feedback.className = "success";
+				feedback.style.display = "block";
+				confetti({ particleCount: 150, spread: 70 });
+				setTimeout(genererPhrase, 4000);
+			} else {
+				const natureAide = phraseActuelle[erreurIdx].nature;
+				const msgAide = aides[natureAide];
+				feedback.className = "error";
+				feedback.style.display = "block";
+				feedback.innerHTML = `<p>Aide pour le mot <b>"${phraseActuelle[erreurIdx].word}"</b> :</p><p>${msgAide}</p><button class="btn-audio" onclick="parler('${msgAide.replace(/'/g, "\\'")}')">🔊 Écouter l'aide</button>`;
+			}
+		}
+
+		window.onload = genererPhrase;
+	</script>
+</body>
+</html>

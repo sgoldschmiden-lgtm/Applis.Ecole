@@ -26,6 +26,34 @@
             padding: 20px; word-break: break-all;
         }
 
+        /* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+        
         /* Couleurs Céline Alvarez */
         .vowel { color: #e74c3c; border-color: #fadbd8; } /* Rouge pour voyelles et sons complexes */
         .consonant { color: #3498db; border-color: #d6eaf8; } /* Bleu pour consonnes */
@@ -49,7 +77,10 @@
     </style>
 </head>
 <body>
-
+    <a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>
+        
     <div id="menuScreen" class="screen active">
         <h1>Apprentissage de la Lecture</h1>
         <p>Sélectionne ton défi :</p>

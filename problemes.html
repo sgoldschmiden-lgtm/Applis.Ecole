@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situations Problemes</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --success: #2ECC71;
+            --error: #E74C3C;
+            --help: #F1C40F;
+            --neutral: #95a5a6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+        }
+        
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+
+        .setup-screen, .game-screen { display: none; }
+        .active { display: block; }
+
+        .btn-menu {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--neutral);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            border: none;
+            cursor: pointer;
+        }
+
+        .problem-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 5px solid var(--primary);
+            font-size: 1.25rem;
+            line-height: 1.5;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin: 5px;
+            transition: transform 0.1s;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        .btn-op { background: #eee; border: 3px solid transparent; font-size: 2rem; width: 300px; }
+        .btn-op.selected { border-color: var(--primary); background: #e3f2fd; }
+
+        .btn-audio { background: var(--primary); color: white; border-radius: 50%; width: 50px; height: 50px; margin-bottom: 10px; }
+        .btn-validate { background: var(--success); color: white; width: 100%; margin-top: 20px; font-weight: bold; }
+        .btn-help { background: var(--help); color: black; font-weight: bold; width: 100%; }
+
+        .help-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff9db;
+            border: 2px solid #f1c40f;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .btn-yes { background: var(--success); color: white; min-width: 100px; }
+        .btn-no { background: var(--error); color: white; min-width: 100px; }
+
+        .options-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        label { cursor: pointer; display: block; margin: 10px 0; }
+        input[type="checkbox"] { transform: scale(1.5); margin-right: 10px; }
+
+		.calculation-setup {
+			display: none;
+			background: #e8f4fd;
+			padding: 20px;
+			border-radius: 15px;
+			margin-top: 20px;
+			border: 2px dashed var(--primary);
+		}
+
+		.op-layout-box {
+			display: flex;
+			justify-content: center;
+			gap: 15px;
+			flex-wrap: wrap;
+			margin-top: 15px;
+		}
+
+		.op-card {
+			background: white;
+			border: 2px solid #ccc;
+			padding: 15px;
+			border-radius: 10px;
+			cursor: pointer;
+			font-family: 'Courier New', Courier, monospace;
+			font-size: 1.5rem;
+			text-align: right;
+			min-width: 120px;
+		}
+
+		.op-card:hover { border-color: var(--primary); }
+		.op-card.correct { border-color: var(--success); background: #eafff0; }
+		.op-card.wrong { border-color: var(--error); background: #fff0f0; }
+
+		.calc-line { border-bottom: 2px solid black; margin-bottom: 5px; padding-bottom: 5px; } 
+ </style>
+</head>
+<body>
+    <a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+    
+    <div class="container">
+        <div id="setup" class="setup-screen active">
+            <h1>Entraînement</h1>
+            <p>Choisis les opérations que tu connais :</p>
+            <div id="op-selection" style="text-align: left; display: inline-block; font-size: 1.3rem;">
+                <label><input type="checkbox" value="addition" checked> + Addition</label>
+                <label><input type="checkbox" value="soustraction" checked> - Soustraction</label>
+                <label><input type="checkbox" value="multiplication"> × Multiplication</label>
+                <label><input type="checkbox" value="division"> ÷ Division</label>
+            </div>
+            <button class="btn btn-validate" onclick="startGame()">Commencer</button>
+        </div>
+    
+        <div id="game" class="game-screen">
+            <button class="btn-menu" onclick="showMenu()"><i class="fas fa-home"></i> Menu</button>
+            
+            <div class="problem-card">
+                <button class="btn btn-audio" onclick="speakText(document.getElementById('problem-text').innerText)"><i class="fas fa-volume-up"></i></button>
+                <p id="problem-text"></p>
+            </div>
+    
+            <div class="options-group">
+                <button class="btn btn-op" onclick="selectOp('addition')" id="btn-addition">+ Addition</button>
+                <button class="btn btn-op" onclick="selectOp('soustraction')" id="btn-soustraction">- Soustraction</button>
+                <button class="btn btn-op" onclick="selectOp('multiplication')" id="btn-multiplication">× Multiplication</button>
+                <button class="btn btn-op" onclick="selectOp('division')" id="btn-division">÷ Division</button>
+            </div>
+    
+            <button class="btn btn-help" onclick="giveHelp()">Aide-moi !</button>
+            
+            <div id="help-display" class="help-box">
+                <p id="help-question" style="font-weight: bold; font-size: 1.1rem;"></p>
+                <div id="help-choices">
+                    <button class="btn btn-yes" onclick="handleHelpResponse(true)">OUI</button>
+                    <button class="btn btn-no" onclick="handleHelpResponse(false)">NON</button>
+                </div>
+                <p id="help-feedback" style="margin-top:15px; font-size: 1.1rem; font-weight: bold; color: #d35400;"></p>
+            </div>
+    
+			<div id="calculation-step" class="calculation-setup">
+				<h3 id="step2-title">Comment dois-tu poser l'opération ?</h3>
+				<div class="op-layout-box" id="op-layouts">
+				</div>
+			</div>
+	
+            <button class="btn btn-validate" onclick="checkAnswer()">Valider</button>
+        </div>
+    </div>
+    
+    <script>
+        const problems = [
+            // ADDITION
+            { text: "Léo a 5 billes. Son ami lui en donne 3 de plus. Combien a-t-il de billes ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Dans un panier, il y a 10 pommes rouges et 5 pommes vertes. Combien y a-t-il de pommes ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Il y a 12 fleurs rouges et 8 fleurs bleues dans le vase. Combien y a-t-il de fleurs en tout ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Papa a acheté 4 pommes et 6 poires. Combien a-t-il de fruits ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Dans la classe, il y a 10 garçons et 9 filles. Combien y a-t-il d'élèves ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Le jardinier a planté 15 salades ce matin et 10 cet après-midi. Combien en a-t-il planté ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Tom a 20 € dans sa tirelire. Sa mamie lui donne 10 € pour son anniversaire. Combien a-t-il maintenant ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Un bus transporte 15 passagers. 4 nouvelles personnes montent au premier arrêt. Combien sont-ils ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "J'ai lu 20 pages de mon livre hier et 20 pages aujourd'hui. Combien de pages ai-je lues ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Pour le goûter, j'ai mangé 2 biscuits. Mon frère en a mangé 4. Combien avons-nous mangé de biscuits ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Il y a 5 oiseaux dans l'arbre. 5 autres oiseaux arrivent. Combien y a-t-il d'oiseaux ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Le fermier a 12 vaches et 4 chevaux. Combien a-t-il d'animaux ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Dans mon sac, j'ai 3 crayons bleus, 2 crayons verts et 5 crayons rouges. Combien ai-je de crayons ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Une équipe de foot a marqué 2 buts en première mi-temps et 1 but en deuxième. Quel est le score ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+            { text: "Maman prépare 10 crêpes au sucre et 10 crêpes au chocolat. Combien y a-t-il de crêpes ?", op: "addition", help: ["Est-ce que j'en ai plus qu'avant ?", "Est-ce que je mets tout ensemble ?"] },
+    
+            // SOUSTRACTION
+            { text: "Julie a 10 gâteaux. Elle en mange 3. Combien en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Il y avait 8 oiseaux sur la branche. 2 s'envolent. Combien en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "J'avais 10 bonbons, j'en ai donné 4 à ma sœur. Combien m'en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Il y avait 12 œufs dans la boîte. J'en ai cassé 3. Combien en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Un arbre a 20 feuilles. Le vent en fait tomber 8. Combien de feuilles reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Julie a 15 billes. Elle en perd 5 à la récréation. Combien lui en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Le pâtissier a fait 30 gâteaux. Il en a vendu 10. Combien lui en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "J'ai 18 ans et mon petit frère a 6 ans de moins que moi. Quel âge a-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Un livre coûte 15 €. J'ai seulement 10 €. Combien me manque-t-il d'argent ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Il y avait 10 voitures sur le parking. 4 sont parties. Combien en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Le chat a attrapé 3 souris sur les 10 qui étaient dans le grenier. Combien en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Mon album peut contenir 50 images. J'en ai déjà collé 20. Combien reste-t-il de places ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Le réservoir contient 40 litres d'eau. On en utilise 10 pour arroser. Combien en reste-t-il ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+            { text: "Léo avait 14 feutres, mais 4 ne marchent plus. Combien peut-il encore en utiliser ?", op: "soustraction", help: ["Est-ce que j'en ai moins qu'avant ?", "Est-ce que je cherche ce qui reste ?"] },
+    
+            // MULTIPLICATION
+            { text: "Maman achète 3 paquets de 4 yaourts. Combien y a-t-il de yaourts ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "J'achète 3 paquets de 10 images. Combien ai-je d'images en tout ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Un chien a 4 pattes. Combien de pattes ont 3 chiens ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Dans une boîte, il y a 6 œufs. Combien y a-t-il d'œufs dans 2 boîtes ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Une voiture transporte 5 personnes. Combien de personnes y a-t-il dans 4 voitures ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Une fleur a 5 pétales. Combien y a-t-il de pétales sur 10 fleurs ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Un cahier coûte 2 €. Combien coûtent 5 cahiers ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Chaque élève reçoit 3 feuilles de dessin. Il y a 10 élèves. Combien faut-il de feuilles ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Il y a 4 rangées de 5 chaises dans la salle. Combien y a-t-il de chaises ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Je fais 3 tours de stade chaque jour. Combien de tours ferai-je en 5 jours ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Une tablette de chocolat a 4 carrés de large et 5 carrés de long. Combien y a-t-il de carrés ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Un insecte a 6 pattes. Combien de pattes ont 2 insectes ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+            { text: "Maman achète 4 packs de 6 bouteilles d'eau. Combien a-t-elle de bouteilles ?", op: "multiplication", help: ["Est-ce que c'est la même chose qui se répète ?", "Est-ce que je cherche un grand total ?"] },
+    
+            // DIVISION
+            { text: "On veut partager 12 bonbons entre 3 enfants. Combien chacun en aura-t-il ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "On veut partager 10 biscuits entre 2 enfants. Combien en auront-ils chacun ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "Le maître a 20 stylos. Il veut faire des paquets de 5. Combien fera-t-il de paquets ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "J'ai 15 fleurs. Je veux faire 3 bouquets identiques. Combien de fleurs y aura-t-il par bouquet ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "On partage 12 chocolats en 2 parts égales. Combien y en a-t-il par part ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "Une équipe de 20 joueurs veut former 4 groupes égaux. Combien y a-t-il de joueurs par groupe ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "J'ai 30 €. Un ticket de cinéma coûte 10 €. Combien de tickets puis-je acheter ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "Range 12 œufs dans des boîtes de 6. De combien de boîtes as-tu besoin ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "On distribue 18 cartes à 3 joueurs. Combien de cartes reçoit chaque joueur ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "On veut partager 50 bonbons dans 5 sachets. Combien y aura-t-il de bonbons par sachet ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "J'ai 16 roues. Combien de voitures de 4 roues puis-je fabriquer ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] },
+            { text: "On coupe un ruban de 20 cm en morceaux de 5 cm. Combien de morceaux obtient-on ?", op: "division", help: ["Est-ce que je fais des parts égales ?", "Est-ce que je fais des paquets ?"] }
+        ];
+    
+        const opNames = {
+            "addition": "l'addition",
+            "soustraction": "la soustraction",
+            "multiplication": "la multiplication",
+            "division": "la division"
+        };
+    
+        let currentProblem;
+        let selectedOp = null;
+        let helpIndex = 0;
+        let activeOps = [];
+    
+        function startGame() {
+            activeOps = Array.from(document.querySelectorAll('#op-selection input:checked')).map(i => i.value);
+            if(activeOps.length < 2) {
+                alert("Choisis au moins 2 opérations !");
+                return;
+            }
+            
+            document.getElementById('setup').classList.remove('active');
+            document.getElementById('game').classList.add('active');
+            
+            ['addition', 'soustraction', 'multiplication', 'division'].forEach(op => {
+                document.getElementById('btn-' + op).style.display = activeOps.includes(op) ? 'inline-block' : 'none';
+            });
+    
+            nextProblem();
+        }
+    
+        function showMenu() {
+            document.getElementById('setup').classList.add('active');
+            document.getElementById('game').classList.remove('active');
+            window.speechSynthesis.cancel();
+        }
+    
+        function nextProblem() {
+            const filtered = problems.filter(p => activeOps.includes(p.op));
+            currentProblem = filtered[Math.floor(Math.random() * filtered.length)];
+            document.getElementById('problem-text').innerText = currentProblem.text;
+            document.getElementById('help-display').style.display = 'none';
+            document.getElementById('help-feedback').innerText = "";
+            document.getElementById('help-choices').style.display = 'block';
+            helpIndex = 0;
+            selectedOp = null;
+            resetButtons();
+        }
+    
+        function selectOp(op) {
+            selectedOp = op;
+            resetButtons();
+            document.getElementById('btn-' + op).classList.add('selected');
+        }
+    
+        function resetButtons() {
+            document.querySelectorAll('.btn-op').forEach(b => b.classList.remove('selected'));
+        }
+    
+        function giveHelp() {
+            const display = document.getElementById('help-display');
+            const questionText = document.getElementById('help-question');
+            display.style.display = 'block';
+            document.getElementById('help-feedback').innerText = "";
+            document.getElementById('help-choices').style.display = 'block';
+            
+            let helpText = currentProblem.help[helpIndex % currentProblem.help.length];
+            questionText.innerText = helpText;
+            helpIndex++;
+            speakText(helpText);
+        }
+    
+        function handleHelpResponse(isYes) {
+            const feedback = document.getElementById('help-feedback');
+            const opName = opNames[currentProblem.op];
+            let message = "";
+    
+            if(isYes) {
+                message = "Si tu as raison, alors tu dois choisir " + opName + ". N'oublie pas de valider ensuite.";
+            } else {
+                message = "Si tu as raison, alors ce n'est pas une " + currentProblem.op + ". N'oublie pas de valider ensuite.";
+            }
+    
+            feedback.innerText = message;
+            document.getElementById('help-choices').style.display = 'none';
+            speakText(message);
+        }
+    
+        function checkAnswer() {
+            if(!selectedOp) {
+                speakText("Choisis une opération avant de valider.");
+                return;
+            }
+            if(selectedOp === currentProblem.op) {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                speakText("Bravo ! C'est la bonne réponse !");
+                setTimeout(() => { nextProblem(); }, 2000);
+            } else {
+                speakText("Ce n'est pas ça. Clique sur le bouton d'aide pour avoir un indice.");
+            }
+        }
+    
+        function speakText(text) {
+            window.speechSynthesis.cancel();
+            let msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'fr-FR';
+            msg.rate = 0.85; 
+            window.speechSynthesis.speak(msg);
+        }
+ 
+		// Fonction pour extraire les nombres du texte (utile pour l'affichage)
+		function extractNumbers(text) {
+			return text.match(/\d+/g) || [10, 5];
+		}
+
+		function checkAnswer() {
+			if(!selectedOp) {
+				speakText("Choisis une opération avant de valider.");
+				return;
+			}
+			
+			if(selectedOp === currentProblem.op) {
+				// Désactiver les boutons d'opérations pour l'instant
+				document.querySelectorAll('.btn-op').forEach(b => b.style.pointerEvents = 'none');
+				showStep2();
+			} else {
+				speakText("Ce n'est pas ça. Clique sur le bouton d'aide pour avoir un indice.");
+			}
+		}
+
+		function showStep2() {
+			const step2 = document.getElementById('calculation-step');
+			const layoutBox = document.getElementById('op-layouts');
+			const nums = extractNumbers(currentProblem.text);
+			const n1 = nums[0];
+			const n2 = nums[1];
+			const sign = (currentProblem.op === 'addition') ? '+' : (currentProblem.op === 'soustraction') ? '-' : (currentProblem.op === 'multiplication') ? '×' : '÷';
+			
+			step2.style.display = 'block';
+			layoutBox.innerHTML = '';
+			speakText("Bravo ! Maintenant, comment dois-tu poser l'opération ?");
+
+			// Option A : N1 sur N2
+			const optA = createOpCard(n1, n2, sign, 'A');
+			// Option B : N2 sur N1
+			const optB = createOpCard(n2, n1, sign, 'B');
+			// Option C : Les deux sont corrects
+			const optC = document.createElement('button');
+			optC.className = 'btn';
+			optC.style.background = '#ddd';
+			optC.innerText = "Les 2 sont correctes";
+			optC.onclick = () => validateStep2('C');
+
+			layoutBox.appendChild(optA);
+			layoutBox.appendChild(optB);
+			layoutBox.appendChild(optC);
+		}
+
+		function createOpCard(top, bottom, sign, id) {
+			const card = document.createElement('div');
+			card.className = 'op-card';
+			card.innerHTML = `<div>${top}</div><div class="calc-line">${sign} ${bottom}</div><div>&nbsp;</div>`;
+			card.onclick = () => validateStep2(id);
+			return card;
+		}
+
+		function validateStep2(choice) {
+			let isCorrect = false;
+			let result = 0;
+			const nums = extractNumbers(currentProblem.text).map(Number);
+			
+			// Logique de validation pédagogique
+			if (currentProblem.op === 'addition' || currentProblem.op === 'multiplication') {
+				if (choice === 'C') isCorrect = true; // Commutatif
+			} else if (currentProblem.op === 'soustraction') {
+				// En ULIS, on pose souvent le plus grand en haut
+				if (choice === 'A' && nums[0] >= nums[1]) isCorrect = true;
+				if (choice === 'B' && nums[1] >= nums[0]) isCorrect = true;
+			} else {
+				if (choice === 'A') isCorrect = true;
+			}
+
+			// Calcul du résultat pour la phrase finale
+			if (currentProblem.op === 'addition') result = nums[0] + nums[1];
+			if (currentProblem.op === 'soustraction') result = Math.abs(nums[0] - nums[1]);
+			if (currentProblem.op === 'multiplication') result = nums[0] * nums[1];
+			if (currentProblem.op === 'division') result = nums[0] / nums[1];
+
+			if (isCorrect) {
+				confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+				const finalMsg = `Félicitations ! Le résultat du calcul est ${result}.`;
+				speakText(finalMsg);
+				setTimeout(() => { 
+					document.getElementById('calculation-step').style.display = 'none';
+					document.querySelectorAll('.btn-op').forEach(b => b.style.pointerEvents = 'auto');
+					nextProblem(); 
+				}, 4000);
+			} else {
+				speakText("Regarde bien l'ordre des nombres pour cette opération.");
+			}
+		}
+ </script>
+
+</body>
+</html>

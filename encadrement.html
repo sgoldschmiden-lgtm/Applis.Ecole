@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maths ULIS - Entraînement</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+	   
+        /* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .hidden { display: none; }
+
+        h1 { color: var(--primary); }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:hover { transform: scale(1.02); opacity: 0.9; }
+
+        .btn-back { background: #95a5a6; margin-bottom: 20px; }
+
+        .exercise-area { margin-top: 30px; }
+
+        .number-box {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 20px;
+            padding: 10px;
+            border-bottom: 4px solid var(--primary);
+            display: inline-block;
+        }
+
+        .inputs-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .number-selector {
+            display: flex;
+            gap: 5px;
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        select {
+            font-size: 1.5rem;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .graduated-line {
+            position: relative;
+            height: 100px;
+            width: 90%;
+            margin: 40px auto;
+            border-bottom: 3px solid #333;
+        }
+
+        .mark {
+            position: absolute;
+            bottom: 0;
+            width: 3px;
+            height: 20px;
+            background: #333;
+        }
+
+        .mark-label {
+            position: absolute;
+            bottom: -30px;
+            transform: translateX(-50%);
+            font-weight: bold;
+        }
+
+        .target-mark {
+            position: absolute;
+            bottom: 0;
+            width: 4px;
+            height: 40px;
+            background: var(--error);
+        }
+
+        .target-label {
+            position: absolute;
+            top: -40px;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            color: var(--error);
+        }
+
+        .feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            min-height: 1.5em;
+        }
+
+        .score-display {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+		
+		.btn-speak {
+			background: #f39c12;
+			border-radius: 50%;
+			width: 45px;
+			height: 45px;
+			border: none;
+			cursor: pointer;
+			margin-left: 10px;
+			font-size: 1.2rem;
+			vertical-align: middle;
+		}
+		.btn-speak:hover { background: #e67e22; }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+    
+	<div class="container">
+		<div id="score-box" class="score-display hidden">Question : <span id="current-q">1</span>/10 | Score : <span id="score-val">0</span></div>
+		
+		<div id="menu">
+			<h1>Entraînement Mathématiques</h1>
+			<p>Choisis un exercice :</p>
+			<div class="menu-grid">
+				<button onclick="startExo(1)">Encadrer un nombre</button>
+				<button onclick="startExo(2)">La droite graduée</button>
+			</div>
+		</div>
+
+		<div id="exercise-screen" class="hidden">
+			<button class="btn-back" onclick="showMenu()">↩ Retour au menu</button>
+			
+			<div id="instruction" style="font-size: 1.2rem; margin-bottom: 15px;"></div>
+
+			<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+				<div id="instruction" style="font-size: 1.2rem;"></div>
+				<button class="btn-speak" onclick="readInstruction()" title="Écouter la consigne">🔊</button>
+			</div>
+
+			<div id="exo1-ui" class="hidden">
+				<div class="inputs-container">
+					<div id="selector-left"></div>
+					<div class="number-box" id="central-number">?</div>
+					<div id="selector-right"></div>
+				</div>
+			</div>
+
+			<div id="exo2-ui" class="hidden">
+				<div class="graduated-line" id="line-container"></div>
+				<div id="selector-target" class="inputs-container"></div>
+			</div>
+
+			<div class="feedback" id="feedback"></div>
+			<button id="btn-validate" onclick="checkAnswer()">Valider</button>
+		</div>
+	</div>
+
+<script>
+    let currentExo = 0;
+    let score = 0;
+    let questionCount = 0;
+    let currentData = {};
+
+    function showMenu() {
+        document.getElementById('menu').classList.remove('hidden');
+        document.getElementById('exercise-screen').classList.add('hidden');
+        document.getElementById('score-box').classList.add('hidden');
+        score = 0;
+        questionCount = 0;
+    }
+
+    function startExo(num) {
+        currentExo = num;
+        score = 0;
+        questionCount = 0;
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('exercise-screen').classList.remove('hidden');
+        document.getElementById('score-box').classList.remove('hidden');
+        nextQuestion();
+    }
+
+    function createDigitSelector(id) {
+        let html = `<div class="number-selector" id="${id}">`;
+        // Centaines, Dizaines, Unités (on peut adapter selon le niveau)
+        for(let i=0; i<3; i++) {
+            html += `<select class="digit-sel">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+            </select>`;
+        }
+        html += `</div>`;
+        return html;
+    }
+
+    function getSelectedNumber(containerId) {
+        const selects = document.querySelectorAll(`#${containerId} select`);
+        let val = "";
+        selects.forEach(s => val += s.value);
+        return parseInt(val);
+    }
+
+    function resetSelectors() {
+        document.querySelectorAll('select').forEach(s => s.value = "0");
+    }
+
+    function nextQuestion() {
+        if (questionCount >= 10) {
+            alert(`C'est fini ! Score final : ${score}/10`);
+            showMenu();
+            return;
+        }
+
+        questionCount++;
+        document.getElementById('current-q').innerText = questionCount;
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('btn-validate').style.display = "inline-block";
+        resetSelectors();
+
+        if (currentExo === 1) setupExo1();
+        else setupExo2();
+    }
+
+    function setupExo1() {
+        document.getElementById('exo1-ui').classList.remove('hidden');
+        document.getElementById('exo2-ui').classList.add('hidden');
+        
+        const types = ['voisins', 'dizaines', 'centaines'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const num = Math.floor(Math.random() * 800) + 100;
+        
+        document.getElementById('central-number').innerText = num;
+        document.getElementById('selector-left').innerHTML = "Avant<br>" + createDigitSelector('val-before');
+        document.getElementById('selector-right').innerHTML = "Après<br>" + createDigitSelector('val-after');
+
+        if(type === 'voisins') {
+            document.getElementById('instruction').innerText = "Trouve le nombre juste avant et juste après :";
+            currentData = { a: num - 1, b: num + 1 };
+        } else if(type === 'dizaines') {
+            document.getElementById('instruction').innerText = "Encadre à la dizaine la plus proche :";
+            let low = Math.floor(num / 10) * 10;
+            currentData = { a: low, b: low + 10 };
+        } else {
+            document.getElementById('instruction').innerText = "Encadre à la centaine la plus proche :";
+            let low = Math.floor(num / 100) * 100;
+            currentData = { a: low, b: low + 100 };
+        }
+    }
+
+    function setupExo2() {
+        document.getElementById('exo1-ui').classList.add('hidden');
+        document.getElementById('exo2-ui').classList.remove('hidden');
+        document.getElementById('instruction').innerText = "Quel est le nombre indiqué par la flèche rouge ?";
+        
+        const line = document.getElementById('line-container');
+        line.innerHTML = "";
+        
+        const mode = Math.floor(Math.random() * 4); // 0: 1 graduation, 1: unités, 2: dizaines, 3: centaines
+        let start, step, count, targetIdx;
+
+        switch(mode) {
+            case 0: start = Math.floor(Math.random()*90)*10; step = 10; count = 1; break;
+            case 1: start = Math.floor(Math.random()*900); step = 1; count = 5; break;
+            case 2: start = Math.floor(Math.random()*50)*10; step = 10; count = 5; break;
+            case 3: start = Math.floor(Math.random()*4)*100; step = 100; count = 5; break;
+        }
+
+        targetIdx = Math.ceil(Math.random() * count);
+        const targetVal = start + (targetIdx * step);
+        currentData = { target: targetVal };
+
+        // Dessiner la ligne
+        const totalSteps = count + 1;
+        for(let i=0; i<=totalSteps; i++) {
+            const pos = (i / totalSteps) * 100;
+            const val = start + (i * step);
+            
+            if(i === 0 || i === totalSteps) {
+                line.innerHTML += `<div class="mark" style="left:${pos}%; height:30px"></div>
+                                   <div class="mark-label" style="left:${pos}%">${val}</div>`;
+            } else {
+                line.innerHTML += `<div class="mark" style="left:${pos}%"></div>`;
+                if(i === targetIdx) {
+                    line.innerHTML += `<div class="target-mark" style="left:${pos}%"></div>
+                                       <div class="target-label" style="left:${pos}%">?</div>`;
+                }
+            }
+        }
+        document.getElementById('selector-target').innerHTML = createDigitSelector('val-target');
+    }
+
+    function checkAnswer() {
+        let isCorrect = false;
+        let correctMsg = "";
+
+        if(currentExo === 1) {
+            const ansA = getSelectedNumber('val-before');
+            const ansB = getSelectedNumber('val-after');
+            isCorrect = (ansA === currentData.a && ansB === currentData.b);
+            correctMsg = `La réponse était ${currentData.a} et ${currentData.b}`;
+        } else {
+            const ans = getSelectedNumber('val-target');
+            isCorrect = (ans === currentData.target);
+            correctMsg = `La réponse était ${currentData.target}`;
+        }
+
+        const feed = document.getElementById('feedback');
+        document.getElementById('btn-validate').style.display = "none";
+
+        if(isCorrect) {
+            score++;
+            feed.style.color = "var(--success)";
+            feed.innerText = "Bravo ! C'est juste ! 🎉";
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        } else {
+            feed.style.color = "var(--error)";
+            feed.innerText = "Dommage... " + correctMsg;
+        }
+
+        setTimeout(nextQuestion, 3000);
+    }
+	
+	function readInstruction() {
+    const text = document.getElementById('instruction').innerText;
+    // On annule une lecture en cours si l'élève clique plusieurs fois
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR'; // Force la langue française
+    utterance.rate = 0.9;     // On ralentit légèrement le débit pour une meilleure compréhension
+    
+    window.speechSynthesis.speak(utterance);
+}
+</script>
+
+</body>
+</html>

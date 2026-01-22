@@ -2,17 +2,107 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes Applis - ULIS</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+            background-color: #f4f4f4; /* Couleur de fond légère */
+        }
+
+        /* Conteneur principal */
+        .container {
+            display: flex;
+            flex-wrap: wrap; /* Permet de passer à la ligne si l'espace manque */
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Espacement entre les icônes */
+            min-height: 80vh; /* Centre verticalement sur l'écran */
+        }
+
+        /* Style de chaque bloc d'application */
+        .app-item {
+            flex: 1 1 250px; /* Taille de base 250px, s'étire si besoin */
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .app-item img {
+            width: 100%; /* L'image prend toute la largeur du bloc parent */
+            max-width: 250px; /* Mais ne dépasse pas sa taille réelle */
+            height: auto;
+            border-radius: 15px; /* Optionnel : arrondit les coins */
+            transition: transform 0.2s; /* Petit effet au survol */
+        }
+
+        /* Effet au survol (souris) */
+        .app-item img:hover {
+            transform: scale(1.05);
+        }
+
+        /* Adaptations pour mobile (écrans de moins de 600px) */
+        @media (max-width: 600px) {
+            .container {
+                flex-direction: column; /* Aligne les icônes verticalement */
+            }
+            .app-item {
+                max-width: 150px; /* Réduit un peu la taille sur petit écran */
+            }
+        }
+    </style>
 </head>
 
 <body>
-	<table width=100% align=center>
-		<tr>
-			<td align=center><a href="lecture.html" target=newtab><img src="images/lecture.png"></a></td>
-			<td align=center><a href="ecriture.html" target=newtab><img src="images/ecriture.png"></a></td>
-			<td align=center><a href="calcul.html" target=newtab><img src="images/calcul.png"></a></td>
-			<td align=center><a href="falc.html" target=newtab><img src="images/falc.png"></a></td>
-		</tr>
-	</table>
+    <div class="container">
+        <div class="app-item">
+            <a href="lecture.html">
+                <img src="images/lecture.png" alt="Lecture">
+            </a>
+        </div>
+        <div class="app-item">
+            <a href="ecriture.html">
+                <img src="images/ecriture.png" alt="Écriture">
+            </a>
+        </div>
+		<div class="app-item">
+            <a href="conjugaison.html">
+                <img src="images/conjugaison.png" alt="Conjugaison">
+            </a>
+        </div>
+		<div class="app-item">
+            <a href="phrase.html">
+                <img src="images/phrase.png" alt="Nature des mots">
+            </a>
+        </div>
+        <div class="app-item">
+            <a href="calcul.html">
+                <img src="images/calcul.png" alt="Calcul">
+            </a>
+        </div>
+		<div class="app-item">
+            <a href="reperage.html">
+                <img src="images/reperage.png" alt="Repérage">
+            </a>
+        </div>
+        <div class="app-item">
+            <a href="problemes.html">
+                <img src="images/problemes.png" alt="Problèmes">
+            </a>
+        </div>
+		<div class="app-item">
+            <a href="encadrement.html">
+                <img src="images/encadrement.png" alt="Encadrements">
+            </a>
+        </div>
+		<div class="app-item">
+            <a href="mental.html">
+                <img src="images/mental.png" alt="Calcul Mental">
+            </a>
+        </div>
+    </div>
 </body>
 </html>

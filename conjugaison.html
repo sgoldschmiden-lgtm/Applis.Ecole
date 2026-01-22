@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conjugaison Pro + Mode Difficile - ULIS</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #6c757d; /* Nouvelle couleur pour le mode inactif */
+            --success: #4CAF50;
+            --error: #F44336;
+            --bg: #F8FAFC;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 850px; /* Un peu plus large pour le mode difficile */
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 10px; }
+        
+        .instructions { color: #666; margin-bottom: 15px; font-style: italic; }
+
+        /* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+        
+        /* --- NOUVEAU : Styles pour le sélecteur de mode --- */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--secondary);
+            background: white;
+            color: var(--secondary);
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active-mode {
+             border-color: var(--primary);
+             background: var(--primary);
+             color: white;
+             box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
+        }
+        /* -------------------------------------------------- */
+
+
+        .group-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        button.group-btn {
+            padding: 15px 5px;
+            border: 3px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.2s;
+            opacity: 0.6; /* Inactif par défaut */
+        }
+
+        /* On active visuellement les boutons de groupe seulement si un mode est choisi */
+        .mode-selected button.group-btn { opacity: 1; }
+        
+        button.group-btn.active-group {
+            background: var(--primary);
+            color: white;
+            opacity: 1 !important;
+        }
+
+        .exercise-card {
+            background: #f1f5f9;
+            padding: 30px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .sentence-box {
+            font-size: 1.5rem;
+            line-height: 2.5;
+            margin-bottom: 20px;
+        }
+
+        /* Style Mode Normal */
+        .verb-zone-normal {
+            display: inline-flex;
+            align-items: center;
+            background: white;
+            padding: 0 10px;
+            border-radius: 8px;
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .ending-select {
+            font-size: 1.4rem;
+            font-family: inherit;
+            padding: 2px 5px;
+            margin-left: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #fffbeb;
+            cursor: pointer;
+            min-width: 60px;
+        }
+
+        /* --- NOUVEAU : Styles pour le Mode Difficile --- */
+        .verb-zone-hard {
+            display: inline-flex;
+            flex-wrap: wrap; /* Permet de passer à la ligne si le verbe est très long sur petit écran */
+            gap: 2px;
+            background: #fffbeb;
+            padding: 5px;
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+        }
+
+        .letter-select {
+            font-size: 1.3rem;
+            font-family: inherit;
+            padding: 2px 0;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            width: 35px; /* Largeur fixe pour une seule lettre */
+            appearance: none; /* Retire la flèche par défaut du select sur certains navigateurs pour gagner de la place */
+            -webkit-appearance: none;
+             text-align-last: center;
+        }
+        /* ---------------------------------------------- */
+
+
+        #validate-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 1.3rem;
+            border-radius: 15px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #388E3C;
+            transition: transform 0.1s;
+        }
+
+        #validate-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #388E3C; }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .correction { color: var(--error); background: #fee2e2; padding: 15px; border-radius: 10px; width: 100%; }
+        .success-msg { color: var(--success); font-weight: bold; font-size: 1.5rem; }
+
+        @media (max-width: 600px) {
+            .group-selector { grid-template-columns: 1fr; }
+            .sentence-box { font-size: 1.2rem; }
+            .mode-btn { padding: 8px 15px; font-size: 0.9rem;}
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>
+        
+    <div class="container">
+        <h1>L'Atelier de Conjugaison</h1>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active-mode" id="btn-normal" onclick="setMode('normal')">Niveau 1 : Normal<br><small>(Radical donné)</small></button>
+            <button class="mode-btn" id="btn-hard" onclick="setMode('hard')">Niveau 2 : Difficile<br><small>(Lettre par lettre)</small></button>
+        </div>
+    
+        <p class="instructions">Choisis un groupe de verbes.</p>
+        
+        <div class="group-selector-container mode-selected">
+            <div class="group-selector">
+                <button class="group-btn" onclick="setGroup(1, this)">1er Groupe<br>(-er)</button>
+                <button class="group-btn" onclick="setGroup(2, this)">2e Groupe<br>(-ir / issant)</button>
+                <button class="group-btn" onclick="setGroup(3, this)">3e Groupe<br>(Autres)</button>
+            </div>
+        </div>
+    
+        <div id="exercise-area" style="display:none;">
+            <div class="exercise-card">
+                <div class="sentence-box" id="sentence"></div>
+            </div>
+            <button id="validate-btn" onclick="checkAnswer()">Valider</button>
+            <div id="result"></div>
+        </div>
+    </div>
+    
+    <script>
+        // --- Données ---
+    
+        // Alphabet complet pour le mode difficile
+        const alphabet = ["", "a", "à", "â", "b", "c", "ç", "d", "e", "é", "è", "ê", "ë", "f", "g", "h", "i", "î", "ï", "j", "k", "l", "m", "n", "o", "ô", "p", "q", "r", "s", "t", "u", "ù", "û", "v", "w", "x", "y", "z", "-"];
+    
+        // Terminaisons pour le mode normal
+        const allEndings = ["e", "es", "ons", "ez", "ent", "is", "it", "issons", "issez", "issent", "s", "t", "x", "tes", "a"];
+    
+        // Base de données (identique à la version précédente)
+        const database = {
+            1: [
+                { s: "Léo (manger) une pomme.", rad: "mang", end: "e", inf: "manger" },
+                { s: "Les enfants (jouer) au ballon.", rad: "jou", end: "ent", inf: "jouer" },
+                { s: "Maman (regarder) la télé.", rad: "regard", end: "e", inf: "regarder" },
+                { s: "Nous (chanter) fort.", rad: "chant", end: "ons", inf: "chanter" },
+                { s: "Tu (dessiner) un camion.", rad: "dessin", end: "es", inf: "dessiner" },
+                { s: "Le petit chat (sauter) sur le lit.", rad: "saut", end: "e", inf: "sauter" },
+                { s: "Mes parents (habiter) ici.", rad: "habit", end: "ent", inf: "habiter" },
+                { s: "Vous (écouter) la maîtresse.", rad: "écout", end: "ez", inf: "écouter" },
+                { s: "Le jardinier (arroser) les fleurs.", rad: "arros", end: "e", inf: "arroser" },
+                { s: "Julie et moi (marcher) en forêt.", rad: "march", end: "ons", inf: "marcher" }
+            ],
+            2: [
+                { s: "Le gâteau (finir) de cuire.", rad: "fin", end: "it", inf: "finir" },
+                { s: "Tu (choisir) une couleur.", rad: "chois", end: "is", inf: "choisir" },
+                { s: "Les fleurs (grandir) vite.", rad: "grand", end: "issent", inf: "grandir" },
+                { s: "Nous (réussir) l'exercice.", rad: "réuss", end: "issons", inf: "réussir" },
+                { s: "Le garçon (rougir) un peu.", rad: "roug", end: "it", inf: "rougir" },
+                { s: "Vous (remplir) le verre.", rad: "rempl", end: "issez", inf: "remplir" },
+                { s: "Les sportifs (bondir) très haut.", rad: "bond", end: "issent", inf: "bondir" },
+                { s: "Je (punir) mon chien.", rad: "pun", end: "is", inf: "punir" }
+            ],
+            3: [
+                { s: "Le train (partir) à l'heure.", rad: "par", end: "t", inf: "partir" },
+                { s: "Papa (faire) les courses.", rad: "fai", end: "t", inf: "faire" },
+                { s: "Je (vouloir) un jouet.", rad: "veu", end: "x", inf: "vouloir" },
+                { s: "Les élèves (prendre) un stylo.", rad: "prenn", end: "ent", inf: "prendre" },
+                { s: "Vous (dire) la vérité.", rad: "di", end: "tes", inf: "dire" },
+                { s: "On (aller) à la piscine.", rad: "v", end: "a", inf: "aller" },
+                { s: "Mes amis (venir) demain.", rad: "vienn", end: "ent", inf: "venir" },
+                { s: "Tu (pouvoir) m'aider ?", rad: "peu", end: "x", inf: "pouvoir" }
+            ]
+        };
+    
+        // --- Variables d'état ---
+        let currentGroup = null;
+        let currentQuestion = null;
+        let isHardMode = false; // Par défaut en mode normal
+    
+        // --- Fonctions ---
+    
+        // 1. Gestion du Mode (Normal vs Difficile)
+        function setMode(mode) {
+            isHardMode = (mode === 'hard');
+            
+            // Mise à jour visuelle des boutons de mode
+            document.getElementById('btn-normal').classList.toggle('active-mode', !isHardMode);
+            document.getElementById('btn-hard').classList.toggle('active-mode', isHardMode);
+    
+            // Si un exercice est déjà en cours, on le recharge immédiatement avec le nouveau mode
+            if (currentGroup) {
+                 document.getElementById('result').innerHTML = '';
+                 nextQuestion();
+            }
+        }
+    
+        // 2. Choix du groupe
+        function setGroup(group, btn) {
+            currentGroup = group;
+            document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active-group'));
+            btn.classList.add('active-group');
+            document.getElementById('exercise-area').style.display = 'block';
+            document.getElementById('result').innerHTML = '';
+            nextQuestion();
+        }
+    
+        // 3. Génération de la question (C'est ici que la logique change selon le mode)
+        function nextQuestion() {
+            const pool = database[currentGroup];
+            currentQuestion = pool[Math.floor(Math.random() * pool.length)];
+            
+            // On sépare la phrase avant et après le verbe à l'infinitif
+            const sentenceParts = currentQuestion.s.split(`(${currentQuestion.inf})`);
+            
+            let verbHTML = '';
+    
+            if (isHardMode) {
+                // --- LOGIQUE MODE DIFFICILE ---
+                const fullAnswer = currentQuestion.rad + currentQuestion.end;
+                verbHTML = '<span class="verb-zone-hard">';
+                
+                // On crée un select pour CHAQUE lettre de la réponse attendue
+                for (let i = 0; i < fullAnswer.length; i++) {
+                    let letterSelect = `<select class="letter-select">`;
+                    alphabet.forEach(char => {
+                        // La première option est vide et affiche "?"
+                        const displayChar = char === "" ? "?" : char;
+                        letterSelect += `<option value="${char}">${displayChar}</option>`;
+                    });
+                    letterSelect += `</select>`;
+                    verbHTML += letterSelect;
+                }
+                verbHTML += '</span>';
+    
+            } else {
+                // --- LOGIQUE MODE NORMAL (Existant) ---
+                let selectHTML = `<select class="ending-select" id="ending-select"><option value="">?</option>`;
+                allEndings.sort().forEach(e => {
+                    selectHTML += `<option value="${e}">${e}</option>`;
+                });
+                selectHTML += `</select>`;
+    
+                verbHTML = `
+                <span class="verb-zone-normal">
+                    <strong>${currentQuestion.rad}</strong>${selectHTML}
+                </span>`;
+            }
+    
+            // Insertion dans le DOM
+            document.getElementById('sentence').innerHTML = `
+                ${sentenceParts[0]} 
+                ${verbHTML} 
+                ${sentenceParts[1]}
+                <br><small style="color:#999; font-size:0.9rem; display:block; margin-top:10px;">(${currentQuestion.inf})</small>
+            `;
+            document.getElementById('result').innerHTML = '';
+        }
+    
+        // 4. Vérification de la réponse (Change aussi selon le mode)
+        function checkAnswer() {
+            let userAnswer = '';
+            const fullCorrectAnswer = currentQuestion.rad + currentQuestion.end;
+            const resultDiv = document.getElementById('result');
+            let allFilled = true;
+    
+            if (isHardMode) {
+                 // --- VERIF MODE DIFFICILE ---
+                 // On récupère toutes les lettres choisies
+                 const selects = document.querySelectorAll('.letter-select');
+                 selects.forEach(select => {
+                     if(select.value === "") allFilled = false;
+                     userAnswer += select.value;
+                 });
+    
+            } else {
+                 // --- VERIF MODE NORMAL ---
+                 const endingSelect = document.getElementById('ending-select');
+                 if(endingSelect.value === "") allFilled = false;
+                 // La réponse utilisateur est le radical (déjà bon) + la terminaison choisie
+                 userAnswer = currentQuestion.rad + endingSelect.value;
+            }
+    
+            // Si l'élève n'a pas tout rempli, on ne fait rien
+            if (!allFilled) {
+                 resultDiv.innerHTML = '<span style="color:#666;">Choisis toutes les lettres avant de valider !</span>';
+                 return;
+            }
+    
+            // Comparaison (en minuscules pour éviter les soucis de casse)
+            if (userAnswer.toLowerCase() === fullCorrectAnswer.toLowerCase()) {
+                // SUCCÈS
+                resultDiv.innerHTML = `<div class="success-msg">✨ Bravo ! ✨</div>`;
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#4A90E2', '#4CAF50', '#FFD700']
+                });
+                // On attend 2.5 secondes avant la prochaine question
+                setTimeout(nextQuestion, 2500);
+            } else {
+                // ERREUR
+                resultDiv.innerHTML = `
+                    <div class="correction">
+                        Aïe, ce n'est pas ça. <br>
+                        La bonne réponse pour "${currentQuestion.inf}" était : 
+                        <br><b style="font-size:1.4rem; display:inline-block; margin:10px 0;">${fullCorrectAnswer}</b>
+                        <br><button onclick="nextQuestion()" style="margin-top:10px; cursor:pointer; padding:8px 15px; border-radius:20px; border:none; background:white; font-weight:bold; color:var(--error);">Continuer</button>
+                    </div>`;
+            }
+        }
+    </script>
+
+</body>
+</html>

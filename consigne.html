@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comprendre la consigne</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f5f5f5;
+}
+
+.container {
+    max-width: 1000px;
+    margin: auto;
+    padding: 15px;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+#affirmation {
+    font-size: 1.4rem;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.key {
+    background: yellow;
+    font-weight: bold;
+}
+
+.images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.image-card {
+    border: 3px solid transparent;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    background: white;
+}
+
+.image-card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+.image-card.correct {
+    border-color: green;
+}
+
+.image-card.wrong {
+    border-color: red;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+#feedback {
+    text-align: center;
+    font-size: 1.3rem;
+    margin-top: 15px;
+}
+
+#score {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+canvas {
+    position: fixed;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div class="container">
+    <h1>Comprendre la consigne</h1>
+
+    <div class="controls">
+        <button onclick="setLevel('facile')">Niveau facile</button>
+        <button onclick="setLevel('difficile')">Niveau difficile</button>
+        <button onclick="speak()">🔊 Écouter</button>
+    </div>
+
+    <div id="affirmation"></div>
+
+    <div class="images" id="images"></div>
+
+    <div id="feedback"></div>
+    <div id="score"></div>
+</div>
+
+<script>
+const easyQuestions = [
+    {
+        text: "Le <span class='key'>château noir</span> <span class='key'>n'a pas de drapeau</span>.",
+        audio: "Le château noir n'a pas de drapeau",
+        correct: 0,
+        images: [
+            "images/chateau_noir_sans_drapeau.png",
+            "images/chateau_noir_avec_drapeau_noir.png",
+            "images/chateau_blanc_avec_drapeau_noir.png",
+            "images/chateau_blanc_sans_drapeau.png"
+        ]
+    }
+];
+
+const hardQuestions = [
+    {
+        text: "Le <span class='key'>château noir</span> <span class='key'>sans drapeau</span> est <span class='key'>devant</span> la maison blanche.",
+        audio: "Le château noir sans drapeau est devant la maison blanche",
+        correct: 1,
+        images: [
+            "images/scene_1.png",
+            "images/scene_2.png",
+            "images/scene_3.png",
+            "images/scene_4.png"
+        ]
+    }
+];
+
+let level = "facile";
+let questions = [];
+let current = 0;
+let score = 0;
+
+function setLevel(lvl) {
+    level = lvl;
+    questions = lvl === "facile" ? easyQuestions : hardQuestions;
+    current = 0;
+    score = 0;
+    loadQuestion();
+}
+
+function loadQuestion() {
+    document.getElementById("feedback").innerHTML = "";
+    document.getElementById("affirmation").innerHTML = questions[current].text;
+
+    const imagesDiv = document.getElementById("images");
+    imagesDiv.innerHTML = "";
+
+    questions[current].images.forEach((src, index) => {
+        const div = document.createElement("div");
+        div.className = "image-card";
+        div.onclick = () => checkAnswer(index, div);
+        const img = document.createElement("img");
+        img.src = src;
+        div.appendChild(img);
+        imagesDiv.appendChild(div);
+    });
+
+    updateScore();
+}
+
+function speak() {
+    const utterance = new SpeechSynthesisUtterance(questions[current].audio);
+    utterance.lang = "fr-FR";
+    speechSynthesis.speak(utterance);
+}
+
+function checkAnswer(index, card) {
+    const correct = questions[current].correct;
+    const cards = document.querySelectorAll(".image-card");
+
+    cards.forEach(c => c.onclick = null);
+
+    if (index === correct) {
+        card.classList.add("correct");
+        score++;
+        document.getElementById("feedback").innerHTML = "Bravo ! 🎉";
+        confetti();
+    } else {
+        card.classList.add("wrong");
+        cards[correct].classList.add("correct");
+        document.getElementById("feedback").innerHTML = "Regarde bien les mots importants.";
+    }
+
+    setTimeout(() => {
+        current++;
+        if (current < 10 && current < questions.length) {
+            loadQuestion();
+        } else {
+            document.getElementById("affirmation").innerHTML = "Fin de l'exercice";
+            document.getElementById("images").innerHTML = "";
+            document.getElementById("feedback").innerHTML = `Score final : ${score} / 10`;
+        }
+    }, 2500);
+}
+
+function updateScore() {
+    document.getElementById("score").innerHTML = `Question ${current + 1} / 10 — Score : ${score}`;
+}
+
+/* Confettis */
+function confetti() {
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let pieces = [];
+    for (let i = 0; i < 150; i++) {
+        pieces.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 6 + 4,
+            dy: Math.random() * 4 + 2
+        });
+    }
+
+    function update() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = "hsl(" + Math.random() * 360 + ",100%,50%)";
+            ctx.fill();
+            p.y += p.dy;
+        });
+    }
+
+    const interval = setInterval(update, 30);
+    setTimeout(() => {
+        clearInterval(interval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }, 2000);
+}
+</script>
+
+<script>
+/* ============================
+   BANQUE DE 400 AFFIRMATIONS
+   ============================ */
+
+/* OUTILS */
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
+/* ============================
+   NIVEAU FACILE (200)
+   ============================ */
+
+const couleurs = ["noir", "blanc"];
+const drapeaux = ["avec drapeau", "sans drapeau"];
+const maisons = ["maison blanche", "maison noire"];
+
+let easyQuestions = [];
+
+couleurs.forEach(couleur => {
+    drapeaux.forEach(drapeau => {
+        maisons.forEach(maison => {
+
+            const affirmative = {
+                text: `Le <span class="key">château ${couleur}</span> <span class="key">${drapeau}</span>.`,
+                audio: `Le château ${couleur} ${drapeau}`,
+                correct: 0,
+                images: [
+                    `images/chateau_${couleur}_${drapeau.replace(" ", "_")}.png`,
+                    `images/chateau_${couleur === "noir" ? "blanc" : "noir"}_${drapeau.replace(" ", "_")}.png`,
+                    `images/chateau_${couleur}_avec_drapeau.png`,
+                    `images/chateau_${couleur}_sans_drapeau.png`
+                ]
+            };
+
+            easyQuestions.push(affirmative);
+        });
+    });
+});
+
+/* Complément avec animaux, objets, formes */
+const animaux = ["chat", "chien"];
+const positions = ["assis", "debout"];
+const colliers = ["avec collier", "sans collier"];
+
+animaux.forEach(animal => {
+    couleurs.forEach(couleur => {
+        positions.forEach(position => {
+            colliers.forEach(collier => {
+
+                easyQuestions.push({
+                    text: `Le <span class="key">${animal} ${couleur}</span> est <span class="key">${position}</span> et <span class="key">${collier}</span>.`,
+                    audio: `Le ${animal} ${couleur} est ${position} et ${collier}`,
+                    correct: 0,
+                    images: [
+                        `images/${animal}_${couleur}_${position}_${collier.replace(" ", "_")}.png`,
+                        `images/${animal}_${couleur}_debout_avec_collier.png`,
+                        `images/${animal}_${couleur}_assis_sans_collier.png`,
+                        `images/${animal}_${couleur}_debout_sans_collier.png`
+                    ]
+                });
+
+            });
+        });
+    });
+});
+
+/* Limitation volontaire à 200 */
+easyQuestions = shuffle(easyQuestions).slice(0, 200);
+
+/* ============================
+   NIVEAU DIFFICILE (200)
+   ============================ */
+
+let hardQuestions = [];
+
+const positionsComplexes = ["devant", "derrière", "sur", "sous"];
+
+animaux.forEach(animal => {
+    couleurs.forEach(couleur => {
+        positionsComplexes.forEach(pos => {
+            maisons.forEach(maison => {
+
+                hardQuestions.push({
+                    text: `Le <span class="key">${animal} ${couleur}</span> est <span class="key">${pos}</span> la <span class="key">${maison}</span> et <span class="key">n'a pas de collier</span>.`,
+                    audio: `Le ${animal} ${couleur} est ${pos} la ${maison} et n'a pas de collier`,
+                    correct: 0,
+                    images: [
+                        `images/${animal}_${couleur}_${pos}_${maison.replace(" ", "_")}_sans_collier.png`,
+                        `images/${animal}_${couleur}_${pos}_${maison.replace(" ", "_")}_avec_collier.png`,
+                        `images/${animal}_blanc_${pos}_${maison.replace(" ", "_")}_sans_collier.png`,
+                        `images/${animal}_${couleur}_devant_${maison.replace(" ", "_")}_sans_collier.png`
+                    ]
+                });
+
+            });
+        });
+    });
+});
+
+/* Scènes avec négation + double critère */
+const formes = ["rond", "carré"];
+const tailles = ["petit", "grand"];
+
+formes.forEach(forme => {
+    couleurs.forEach(couleur => {
+        tailles.forEach(taille => {
+
+            hardQuestions.push({
+                text: `Le <span class="key">${forme}</span> <span class="key">${couleur}</span> <span class="key">n'est pas</span> <span class="key">${taille}</span>.`,
+                audio: `Le ${forme} ${couleur} n'est pas ${taille}`,
+                correct: 0,
+                images: [
+                    `images/${forme}_${couleur}_${taille === "petit" ? "grand" : "petit"}.png`,
+                    `images/${forme}_${couleur}_${taille}.png`,
+                    `images/${forme}_bleu_grand.png`,
+                    `images/${forme}_rouge_petit.png`
+                ]
+            });
+
+        });
+    });
+});
+
+/* Limitation volontaire à 200 */
+hardQuestions = shuffle(hardQuestions).slice(0, 200);
+
+/* ============================
+   UTILISATION DANS L’APP
+   ============================ */
+
+let questions = [];
+let current = 0;
+let score = 0;
+
+function setLevel(level) {
+    current = 0;
+    score = 0;
+    questions = level === "facile" ? shuffle(easyQuestions) : shuffle(hardQuestions);
+    loadQuestion();
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcul Mental - ULIS</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary: #4A90E2;
+            --success: #48BB78;
+            --bg: #F7FAFC;
+            --niveaux: #9F7AEA;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            touch-action: manipulation;
+        }
+
+        #app {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .hidden { display: none !important; }
+
+        .menu-grid { display: grid; gap: 0.8rem; margin-top: 1rem; }
+        
+        button {
+            padding: 0.8rem;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-op { background: #ED8936; }
+        .btn-lvl { background: var(--niveaux); opacity: 0.6; }
+        .btn-lvl.active { opacity: 1; border: 3px solid #553C9A; font-weight: bold; }
+        .btn-menu { background: #718096; margin-top: 1rem; }
+        
+        #timer { font-size: 2.5rem; font-weight: bold; color: #E53E3E; margin-bottom: 10px; }
+
+        .calcul-container {
+            font-size: 3rem;
+            margin: 1.5rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 4rem;
+        }
+
+        select {
+            font-size: 2.5rem;
+            padding: 5px;
+            border-radius: 8px;
+            border: 3px solid var(--primary);
+            background: #EBF8FF;
+        }
+
+        .audio-btn {
+            background: #4A90E2;
+            font-size: 1.5rem;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+	<audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clink_vibrant.ogg"></audio>
+	<audio id="sound-error" src="https://actions.google.com/sounds/v1/foley/wooden_box_drop.ogg"></audio>
+
+	<div id="app">
+		<div id="screen-menu">
+			<h1>Calcul Mental</h1>
+			<p><strong>1. Choisi ton niveau :</strong></p>
+			<div class="menu-grid">
+				<button id="lvl1" class="btn-lvl active" onclick="setLevel(1)">Niveau 1 (Facile)</button>
+				<button id="lvl2" class="btn-lvl" onclick="setLevel(2)">Niveau 2 (Moyen)</button>
+				<button id="lvl3" class="btn-lvl" onclick="setLevel(3)">Niveau 3 (Expert)</button>
+			</div>
+
+			<p><strong>2. Choisi l'opération :</strong></p>
+			<div class="menu-grid">
+				<button class="btn-op" onclick="startGame('addition')">➕ Additions</button>
+				<button class="btn-op" onclick="startGame('soustraction')">➖ Soustractions</button>
+				<button class="btn-op" onclick="startGame('multiplication')">✖️ Multiplications</button>
+			</div>
+		</div>
+
+		<div id="screen-game" class="hidden">
+			<div id="timer">60s</div>
+			<button class="audio-btn" onclick="speakCalcul()">🔊</button>
+			
+			<div class="calcul-container">
+				<span id="enonce">...</span>
+				<span>=</span>
+				<div id="inputs" style="display: inline-flex; gap: 5px;"></div>
+			</div>
+
+			<button id="btn-valider" onclick="checkAnswer()" style="width: 100%; background: var(--success); font-size: 1.5rem; padding: 1rem;">Valider</button>
+			<button class="btn-menu" onclick="showMenu()" style="width: 100%;">Menu</button>
+		</div>
+
+		<div id="screen-result" class="hidden">
+			<h1>Félicitations ! 🎉</h1>
+			<p style="font-size: 1.5rem;">Tu as réussi <span id="final-score" style="color:var(--success); font-weight:bold;">0</span> calculs !</p>
+			<button onclick="showMenu()" style="background: var(--primary); width: 100%;">Rejouer</button>
+		</div>
+	</div>
+
+	<script>
+		let score = 0;
+		let timeLeft = 60;
+		let timerId = null;
+		let currentAnswer = 0;
+		let currentMode = '';
+		let currentLevel = 1;
+
+		function setLevel(lvl) {
+			currentLevel = lvl;
+			document.querySelectorAll('.btn-lvl').forEach(btn => btn.classList.remove('active'));
+			document.getElementById('lvl' + lvl).classList.add('active');
+		}
+
+		function showMenu() {
+			clearInterval(timerId);
+			document.getElementById('screen-menu').classList.remove('hidden');
+			document.getElementById('screen-game').classList.add('hidden');
+			document.getElementById('screen-result').classList.add('hidden');
+		}
+
+		function startGame(mode) {
+			currentMode = mode;
+			score = 0;
+			timeLeft = 60;
+			document.getElementById('screen-menu').classList.add('hidden');
+			document.getElementById('screen-game').classList.remove('hidden');
+			document.getElementById('screen-result').classList.add('hidden');
+			nextQuestion();
+			startTimer();
+		}
+
+		function startTimer() {
+			document.getElementById('timer').innerText = timeLeft + "s";
+			timerId = setInterval(() => {
+				timeLeft--;
+				document.getElementById('timer').innerText = timeLeft + "s";
+				if (timeLeft <= 0) endGame();
+			}, 1000);
+		}
+
+		function createDigitSelect(id) {
+			const sel = document.createElement('select');
+			sel.id = id;
+			for (let i = 0; i <= 9; i++) {
+				const opt = document.createElement('option');
+				opt.value = i;
+				opt.text = i;
+				sel.appendChild(opt);
+			}
+			return sel;
+		}
+
+		function nextQuestion() {
+			let n1, n2, symbol;
+			const inputContainer = document.getElementById('inputs');
+			inputContainer.innerHTML = '';
+
+			// Logique de génération selon niveau et mode
+			if (currentMode === 'multiplication') {
+				const tables = { 1: [0, 1, 2, 5, 10], 2: [0, 1, 2, 3, 4, 5, 10], 3: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] };
+				let possible = tables[currentLevel];
+				n1 = possible[Math.floor(Math.random() * possible.length)];
+				n2 = Math.floor(Math.random() * 11);
+				currentAnswer = n1 * n2;
+				symbol = "x";
+			} else {
+				let max = (currentLevel === 1) ? 20 : (currentLevel === 2 ? 50 : 100);
+				if (currentMode === 'addition') {
+					symbol = "+";
+					currentAnswer = Math.floor(Math.random() * (max + 1));
+					n1 = Math.floor(Math.random() * (currentAnswer + 1));
+					n2 = currentAnswer - n1;
+				} else {
+					symbol = "-";
+					n1 = Math.floor(Math.random() * (max + 1));
+					n2 = (currentLevel === 1) ? Math.floor(Math.random() * 6) : Math.floor(Math.random() * (n1 + 1));
+					if (n2 > n1) n2 = n1;
+					currentAnswer = n1 - n2;
+				}
+			}
+
+			// Affichage dynamique des listes
+			if (currentAnswer >= 10) inputContainer.appendChild(createDigitSelect('digit-1'));
+			inputContainer.appendChild(createDigitSelect('digit-2'));
+
+			document.getElementById('enonce').innerText = `${n1} ${symbol} ${n2}`;
+			speakCalcul();
+		}
+
+		async function checkAnswer() {
+			const d1El = document.getElementById('digit-1');
+			const d2El = document.getElementById('digit-2');
+			const val1 = d1El ? d1El.value : "";
+			const val2 = d2El.value;
+			const userAnswer = parseInt(val1 + val2);
+			const enonce = document.getElementById('enonce');
+			const btnValider = document.getElementById('btn-valider');
+
+			if (userAnswer === currentAnswer) {
+				document.getElementById('sound-correct').play();
+				score++;
+				nextQuestion();
+			} else {
+				document.getElementById('sound-error').play();
+				btnValider.disabled = true;
+				const texteOriginal = enonce.innerText;
+				enonce.style.color = "#E53E3E";
+				enonce.innerText = texteOriginal + " = " + currentAnswer;
+				
+				await new Promise(r => setTimeout(r, 1500));
+				
+				enonce.style.color = "black";
+				btnValider.disabled = false;
+				nextQuestion();
+			}
+		}
+
+		function speakCalcul() {
+			let text = document.getElementById('enonce').innerText;
+			text = text.replace('x', 'fois').replace('-', 'moins'); 
+			const synth = window.speechSynthesis;
+			const utterThis = new SpeechSynthesisUtterance(text);
+			utterThis.lang = 'fr-FR';
+			utterThis.rate = 0.8;
+			synth.speak(utterThis);
+		}
+
+		function endGame() {
+			clearInterval(timerId);
+			document.getElementById('screen-game').classList.add('hidden');
+			document.getElementById('screen-result').classList.remove('hidden');
+			document.getElementById('final-score').innerText = score;
+			confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+		}
+	</script>
+</body>
+</html>

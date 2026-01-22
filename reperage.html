@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Repérage Spatial - Adaptatif</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --primary-color: #4a90e2;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --border-color: #34495e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: manipulation; /* Optimise le toucher sur tablette */
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; color: #2c3e50; margin: 10px 0; }
+
+        /* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+
+        
+        /* Barre de niveaux */
+        .levels {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-level {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            transition: 0.2s;
+        }
+
+        .btn-level.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        #timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        /* Conteneur de jeu adaptatif */
+        .game-area {
+            display: flex;
+            flex-direction: row; /* Côte à côte par défaut */
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* Sur mobile, on empile le modèle et la zone de jeu */
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            .grid-wrapper h3 { margin: 5px 0; }
+        }
+
+        .grid-wrapper { text-align: center; flex: 1; }
+
+        .grid {
+            display: grid;
+            gap: 4px;
+            background-color: #bdc3c7;
+            padding: 4px;
+            border-radius: 8px;
+            margin: 0 auto;
+            /* Largeur dynamique : s'adapte à l'écran */
+            width: fit-content;
+            max-width: 90vw; 
+        }
+
+        /* Taille des cases adaptative */
+        .cell {
+            width: clamp(35px, 8vw, 55px);
+            height: clamp(35px, 8vw, 55px);
+            background-color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .model-grid .cell { cursor: default; }
+
+        /* Palette de couleurs */
+        .palette {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 12px 20px;
+            background: white;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .color-option {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 4px solid #eee;
+        }
+
+        .color-option.selected {
+            border-color: #2c3e50;
+            transform: scale(1.15);
+        }
+
+        #validate-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 15px 45px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            padding: 0 20px;
+            min-height: 1.5em;
+        }
+
+        /* Classes de couleurs */
+        .color-white { background-color: #ffffff; }
+        .color-red { background-color: #ff5e57; }
+        .color-blue { background-color: #54a0ff; }
+        .color-yellow { background-color: #ffdb58; }
+        .color-green { background-color: #1dd1a1; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+    
+    <h1>Repérage dans l'espace</h1>
+
+    <div class="levels">
+        <button class="btn-level active" onclick="changeLevel(3, this)">Niv. 1 (3x3)</button>
+        <button class="btn-level" onclick="changeLevel(4, this)">Niv. 2 (4x4)</button>
+        <button class="btn-level" onclick="changeLevel(5, this)">Niv. 3 (5x5)</button>
+        <button class="btn-level" onclick="changeLevel(6, this)">Niv. 4 (6x6)</button>
+    </div>
+
+    <div id="timer">⏱️ 0s</div>
+
+    <div class="game-area">
+        <div class="grid-wrapper">
+            <h3>Modèle</h3>
+            <div id="model-grid" class="grid model-grid"></div>
+        </div>
+        <div class="grid-wrapper">
+            <h3>À toi !</h3>
+            <div id="player-grid" class="grid"></div>
+        </div>
+    </div>
+
+    <div class="palette" id="palette">
+        <div class="color-option color-white selected" onclick="selectColor('white', this)" title="Gomme"></div>
+        <div class="color-option color-red" onclick="selectColor('red', this)"></div>
+        <div class="color-option color-blue" onclick="selectColor('blue', this)"></div>
+        <div class="color-option color-yellow" onclick="selectColor('yellow', this)"></div>
+        <div class="color-option color-green" onclick="selectColor('green', this)"></div>
+    </div>
+
+    <button id="validate-btn" onclick="validate()">Valider</button>
+
+    <div id="message"></div>
+
+    <script>
+        let currentSize = 3;
+        let selectedColor = 'white';
+        let startTime;
+        let timerInterval;
+        const colors = ['white', 'red', 'blue', 'yellow', 'green'];
+
+        function initGame(size) {
+            currentSize = size;
+            const modelGrid = document.getElementById('model-grid');
+            const playerGrid = document.getElementById('player-grid');
+            
+            document.getElementById('message').textContent = "";
+            modelGrid.innerHTML = "";
+            playerGrid.innerHTML = "";
+
+            modelGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            playerGrid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+
+            for (let i = 0; i < size * size; i++) {
+                // Création du modèle
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                const modelCell = document.createElement('div');
+                modelCell.className = `cell color-${randomColor}`;
+                modelCell.dataset.color = randomColor;
+                modelGrid.appendChild(modelCell);
+
+                // Création de la zone élève
+                const playerCell = document.createElement('div');
+                playerCell.className = 'cell color-white';
+                playerCell.dataset.color = 'white';
+                // Support tactile et souris
+                playerCell.onmousedown = (e) => { e.preventDefault(); colorCell(playerCell); };
+                playerGrid.appendChild(playerCell);
+            }
+            resetTimer();
+        }
+
+        function selectColor(color, element) {
+            selectedColor = color;
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        function colorCell(cell) {
+            colors.forEach(c => cell.classList.remove(`color-${c}`));
+            cell.classList.add(`color-${selectedColor}`);
+            cell.dataset.color = selectedColor;
+        }
+
+        function changeLevel(size, btn) {
+            document.querySelectorAll('.btn-level').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            initGame(size);
+        }
+
+        function validate() {
+            const modelCells = document.querySelectorAll('#model-grid .cell');
+            const playerCells = document.querySelectorAll('#player-grid .cell');
+            let isCorrect = true;
+
+            for (let i = 0; i < modelCells.length; i++) {
+                if (modelCells[i].dataset.color !== playerCells[i].dataset.color) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            const messageDiv = document.getElementById('message');
+            if (isCorrect) {
+                clearInterval(timerInterval);
+                const finalTime = Math.floor((Date.now() - startTime) / 1000);
+                messageDiv.style.color = "var(--success-color)";
+                messageDiv.innerHTML = `<h2>Bravo ! 🌟</h2>Tu as réussi en ${finalTime} secondes !`;
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            } else {
+                messageDiv.style.color = "var(--error-color)";
+                messageDiv.textContent = "Vérifie bien ton travail, tu y es presque !";
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const seconds = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('timer').textContent = `⏱️ ${seconds}s`;
+            }, 1000);
+        }
+
+        window.onload = () => initGame(3);
+    </script>
+</body>
+</html>

@@ -4,273 +4,332 @@
     <meta charset="UTF-8">
     <title>Manipul'Maths - ULIS</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <style>
-        :root { --unite: #ffeb3b; --dizaine: #4caf50; --centaine: #2196f3; }
-        body { font-family: 'Arial', sans-serif; background-color: #f4f7f6; text-align: center; }
-        #game-container { max-width: 950px; margin: 10px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: relative; }
+<style>
+    
+        /* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+
+    :root { --unite: #ffeb3b; --dizaine: #4caf50; --centaine: #2196f3; }
+        body { font-family: 'Arial', sans-serif; background-color: #f4f7f6; text-align: center; margin: 0; padding: 10px; }
+        
+        #game-container { 
+            max-width: 950px; 
+            margin: 10px auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            position: relative; 
+            width: 95%; /* Responsive width */
+        }
         
         .consigne-box { display: flex; align-items: center; justify-content: center; background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 6px solid #ffc107; gap: 15px; }
-        .consigne-text { font-size: 1.3em; font-weight: bold; flex: 1; }
+        .consigne-text { font-size: 1.1em; font-weight: bold; flex: 1; }
         
-        .btn-audio { font-size: 1.5em; cursor: pointer; border: none; background: #ffc107; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; }
-        .btn-menu { position: absolute; top: 10px; left: 10px; background: #95a5a6; color: white; padding: 5px 10px; }
+        .btn-audio { font-size: 1.5em; cursor: pointer; border: none; background: #ffc107; border-radius: 50%; width: 50px; height: 50px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .btn-menu { position: absolute; top: 10px; left: 10px; background: #95a5a6; color: white; padding: 5px 10px; font-size: 0.9em; }
 
-        /* Calcul posé */
-        .calcul-pose { margin: 10px auto; font-size: 2em; border-collapse: collapse; }
-        .calcul-pose td { width: 60px; height: 60px; text-align: center; }
-        .signe { font-weight: bold; width: 40px; }
+        /* Calcul posé responsive */
+        .calcul-pose { margin: 10px auto; font-size: 1.5em; border-collapse: collapse; }
+        .calcul-pose td { width: 60px; height: 50px; text-align: center; }
+        .signe { font-weight: bold; width: 30px; }
         .barre-calcul { border-bottom: 4px solid black; }
-        select { font-size: 0.8em; padding: 5px; border-radius: 5px; width: 55px; }
+        select { font-size: 0.8em; padding: 5px; border-radius: 5px; width: 60px; }
         .active-col { background-color: #fff9c4; border: 3px solid #fbc02d !important; }
 
-        /* Manipulation */
-        .manipulation-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        /* Manipulation Grid Responsive */
+        .manipulation-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+        }
+        
+        /* Passage en colonne sur mobile */
+        @media (max-width: 768px) {
+            .manipulation-grid { grid-template-columns: 1fr; }
+            .calcul-pose { font-size: 1.2em; }
+            .consigne-text { font-size: 1em; }
+            .btn-audio { width: 40px; height: 40px; font-size: 1.2em; }
+        }
+
         .col-manip { border: 2px solid #eee; border-radius: 10px; padding: 10px; background: #fafafa; }
-        .sub-zone { min-height: 80px; border: 1px dashed #ccc; margin: 5px 0; padding: 5px; display: flex; flex-wrap: wrap; gap: 4px; }
+        .sub-zone { min-height: 80px; border: 1px dashed #ccc; margin: 5px 0; padding: 5px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
         .label-zone { font-size: 0.8em; color: #666; font-style: italic; display: block; width: 100%; text-align: left; }
 
-        /* Blocs */
-        .cube { width: 20px; height: 20px; background: var(--unite); border: 1px solid #d4c000; cursor: pointer; }
-        .barre { width: 14px; height: 70px; background: var(--dizaine); border: 1px solid #2e7d32; cursor: pointer; }
-        .plaque { width: 60px; height: 60px; background: var(--centaine); border: 1px solid #1565c0; cursor: pointer; }
+        /* Blocs ajustés pour mobile */
+        .cube { width: 15px; height: 15px; background: var(--unite); border: 1px solid #d4c000; cursor: pointer; }
+        .barre { width: 10px; height: 60px; background: var(--dizaine); border: 1px solid #2e7d32; cursor: pointer; }
+        .plaque { width: 50px; height: 50px; background: var(--centaine); border: 1px solid #1565c0; cursor: pointer; }
+        
         .selected { outline: 4px solid #e74c3c; z-index: 10; box-shadow: 0 0 10px #e74c3c; }
         .grise { opacity: 0.2; filter: grayscale(1); pointer-events: none; border: 1px dashed #333; }
 
-        .btn-action { padding: 12px 24px; font-size: 1.1em; cursor: pointer; border-radius: 8px; margin: 5px; font-weight: bold; border: none; }
-        #feedback { font-size: 1.4em; height: 1.5em; margin-top: 10px; }
+        .btn-action { padding: 10px 20px; font-size: 1em; cursor: pointer; border-radius: 8px; margin: 5px; font-weight: bold; border: none; }
+        #feedback { font-size: 1.2em; min-height: 1.5em; margin-top: 10px; }
+        
+        /* Empêcher le zoom automatique sur iPhone lors du clic sur les select */
+        select { font-size: 16px !important; } 
     </style>
 </head>
 <body>
-
-<div id="game-container">
-    <button class="btn-menu btn-action" onclick="location.reload()">⬅ Menu</button>
+    <a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
     
-    <div id="choix-mode">
-        <h2 style="margin-top:50px;">Choisis ton opération :</h2>
-        <button onclick="initJeu('addition')" class="btn-action" style="background:#2ecc71; color:white;">➕ Addition</button>
-        <button onclick="initJeu('soustraction')" class="btn-action" style="background:#e67e22; color:white;">➖ Soustraction</button>
-    </div>
-
-    <div id="jeu-interactif" style="display:none;">
-        <h2 id="enonce" style="margin-top: 40px;"></h2>
+    <div id="game-container">
+        <button class="btn-menu btn-action" onclick="location.reload()">⬅ Menu</button>
         
-        <div class="consigne-box">
-            <button class="btn-audio" onclick="lireConsigne()">🔊</button>
-            <div id="consigne" class="consigne-text"></div>
+        <div id="choix-mode">
+            <h2 style="margin-top:50px;">Choisis ton opération :</h2>
+            <button onclick="initJeu('addition')" class="btn-action" style="background:#2ecc71; color:white;">➕ Addition</button>
+            <button onclick="initJeu('soustraction')" class="btn-action" style="background:#e67e22; color:white;">➖ Soustraction</button>
         </div>
-
-        <table class="calcul-pose">
-            <tr><td></td><th style="color:var(--centaine)">C</th><th style="color:var(--dizaine)">D</th><th style="color:var(--unite)">U</th></tr>
-            <tr><td></td>
-                <td><select id="c1"></select></td><td><select id="d1"></select></td><td><select id="u1"></select></td></tr>
-            <tr class="barre-calcul"><td class="signe" id="op-signe"></td>
-                <td><select id="c2"></select></td><td><select id="d2"></select></td><td><select id="u2"></select></td></tr>
-            <tr><td class="signe">=</td>
-                <td><select id="cr" disabled></select></td><td><select id="dr" disabled></select></td><td><select id="ur" disabled></select></td></tr>
-        </table>
-
-        <div class="manipulation-grid">
-            <div class="col-manip" id="container-c">
-                <div><button onclick="mod('c',-1)">-</button> 🟦Centaines <button onclick="mod('c',1)">+</button></div>
-                <span class="label-zone">Nombre 1</span><div id="z-c1" class="sub-zone"></div>
-                <span id="lab-c2" class="label-zone">Nombre 2</span><div id="z-c2" class="sub-zone"></div>
-                <span class="label-zone">Retenues / Échanges</span><div id="z-cr" class="sub-zone"></div>
+    
+        <div id="jeu-interactif" style="display:none;">
+            <h2 id="enonce" style="margin-top: 40px;"></h2>
+            
+            <div class="consigne-box">
+                <button class="btn-audio" onclick="lireConsigne()">🔊</button>
+                <div id="consigne" class="consigne-text"></div>
             </div>
-            <div class="col-manip" id="container-d">
-                <div><button onclick="mod('d',-1)">-</button> 🟩Dizaines <button onclick="mod('d',1)">+</button></div>
-                <span class="label-zone">Nombre 1</span><div id="z-d1" class="sub-zone"></div>
-                <span id="lab-d2" class="label-zone">Nombre 2</span><div id="z-d2" class="sub-zone"></div>
-                <span class="label-zone">Retenues / Échanges</span><div id="z-dr" class="sub-zone"></div>
+    
+            <table class="calcul-pose">
+                <tr><td></td><th style="color:var(--centaine)">C</th><th style="color:var(--dizaine)">D</th><th style="color:var(--unite)">U</th></tr>
+                <tr><td></td>
+                    <td><select id="c1"></select></td><td><select id="d1"></select></td><td><select id="u1"></select></td></tr>
+                <tr class="barre-calcul"><td class="signe" id="op-signe"></td>
+                    <td><select id="c2"></select></td><td><select id="d2"></select></td><td><select id="u2"></select></td></tr>
+                <tr><td class="signe">=</td>
+                    <td><select id="cr" disabled></select></td><td><select id="dr" disabled></select></td><td><select id="ur" disabled></select></td></tr>
+            </table>
+    
+            <div class="manipulation-grid">
+                <div class="col-manip" id="container-c">
+                    <div><button onclick="mod('c',-1)">-</button> 🟦Centaines <button onclick="mod('c',1)">+</button></div>
+                    <span class="label-zone">Nombre 1</span><div id="z-c1" class="sub-zone"></div>
+                    <span id="lab-c2" class="label-zone">Nombre 2</span><div id="z-c2" class="sub-zone"></div>
+                    <span class="label-zone">Retenues / Échanges</span><div id="z-cr" class="sub-zone"></div>
+                </div>
+                <div class="col-manip" id="container-d">
+                    <div><button onclick="mod('d',-1)">-</button> 🟩Dizaines <button onclick="mod('d',1)">+</button></div>
+                    <span class="label-zone">Nombre 1</span><div id="z-d1" class="sub-zone"></div>
+                    <span id="lab-d2" class="label-zone">Nombre 2</span><div id="z-d2" class="sub-zone"></div>
+                    <span class="label-zone">Retenues / Échanges</span><div id="z-dr" class="sub-zone"></div>
+                </div>
+                <div class="col-manip" id="container-u">
+                    <div><button onclick="mod('u',-1)">-</button> 🟨Unités <button onclick="mod('u',1)">+</button></div>
+                    <span class="label-zone">Nombre 1</span><div id="z-u1" class="sub-zone"></div>
+                    <span id="lab-u2" class="label-zone">Nombre 2</span><div id="z-u2" class="sub-zone"></div>
+                    <span class="label-zone">Retenues / Échanges</span><div id="z-ur" class="sub-zone"></div>
+                </div>
             </div>
-            <div class="col-manip" id="container-u">
-                <div><button onclick="mod('u',-1)">-</button> 🟨Unités <button onclick="mod('u',1)">+</button></div>
-                <span class="label-zone">Nombre 1</span><div id="z-u1" class="sub-zone"></div>
-                <span id="lab-u2" class="label-zone">Nombre 2</span><div id="z-u2" class="sub-zone"></div>
-                <span class="label-zone">Retenues / Échanges</span><div id="z-ur" class="sub-zone"></div>
+    
+            <div style="margin-top: 20px;">
+                <button id="btn-conv" style="display:none; background:#9b59b6; color:white;" class="btn-action" onclick="convertir()">🔄 Convertir</button>
+                <button id="btn-cass" style="display:none; background:#e74c3c; color:white;" class="btn-action" onclick="casser()">🔨 Casser</button>
+                <button class="btn-action" style="background:#3498db; color:white;" onclick="verifierEtape()">Valider.</button>
             </div>
+            <div id="feedback"></div>
         </div>
-
-        <div style="margin-top: 20px;">
-            <button id="btn-conv" style="display:none; background:#9b59b6; color:white;" class="btn-action" onclick="convertir()">🔄 Convertir</button>
-            <button id="btn-cass" style="display:none; background:#e74c3c; color:white;" class="btn-action" onclick="casser()">🔨 Casser</button>
-            <button class="btn-action" style="background:#3498db; color:white;" onclick="verifierEtape()">Valider.</button>
-        </div>
-        <div id="feedback"></div>
     </div>
-</div>
-
-<script>
-    let mode = '', etape = 1, subE = 'u', n1, n2, phaseSous = 1;
-
-    function initJeu(type) {
-        mode = type;
-        document.getElementById('choix-mode').style.display = 'none';
-        document.getElementById('jeu-interactif').style.display = 'block';
-        document.getElementById('op-signe').innerText = (mode === 'addition') ? '+' : '-';
-        n1 = Math.floor(Math.random() * 300) + 150;
-        n2 = (mode === 'addition') ? Math.floor(Math.random() * 300) + 20 : Math.floor(Math.random() * (n1 - 50)) + 10;
-        document.getElementById('enonce').innerText = `${n1} ${mode==='addition'?'+':'-'} ${n2}`;
-        if(mode === 'soustraction') {
-            document.getElementById('lab-u2').style.display = document.getElementById('lab-d2').style.display = document.getElementById('lab-c2').style.display = 'none';
-            document.getElementById('z-u2').style.display = document.getElementById('z-d2').style.display = document.getElementById('z-c2').style.display = 'none';
+    
+    <script>
+        let mode = '', etape = 1, subE = 'u', n1, n2, phaseSous = 1;
+    
+        function initJeu(type) {
+            mode = type;
+            document.getElementById('choix-mode').style.display = 'none';
+            document.getElementById('jeu-interactif').style.display = 'block';
+            document.getElementById('op-signe').innerText = (mode === 'addition') ? '+' : '-';
+            n1 = Math.floor(Math.random() * 300) + 150;
+            n2 = (mode === 'addition') ? Math.floor(Math.random() * 300) + 20 : Math.floor(Math.random() * (n1 - 50)) + 10;
+            document.getElementById('enonce').innerText = `${n1} ${mode==='addition'?'+':'-'} ${n2}`;
+            if(mode === 'soustraction') {
+                document.getElementById('lab-u2').style.display = document.getElementById('lab-d2').style.display = document.getElementById('lab-c2').style.display = 'none';
+                document.getElementById('z-u2').style.display = document.getElementById('z-d2').style.display = document.getElementById('z-c2').style.display = 'none';
+            }
+            setupSelects(); maj();
+     
+    	    }
+    
+        function parlerConsigne() {
+            const texte = document.getElementById('consigne').innerText;
+            window.speechSynthesis.cancel();
+            setTimeout(() => {
+                const msg = new SpeechSynthesisUtterance(texte);
+                msg.lang = 'fr-FR';
+                window.speechSynthesis.speak(msg);
+            }, 2000);
+    	  }
+    
+        function setupSelects() {
+            document.querySelectorAll('select').forEach(s => {
+                s.innerHTML = '<option value="">?</option>';
+                for(let i=0; i<=9; i++) s.innerHTML += `<option value="${i}">${i}</option>`;
+            });
         }
-        setupSelects(); maj();
- 
-	    }
-
-    function parlerConsigne() {
-        const texte = document.getElementById('consigne').innerText;
-        window.speechSynthesis.cancel();
-        setTimeout(() => {
-            const msg = new SpeechSynthesisUtterance(texte);
-            msg.lang = 'fr-FR';
-            window.speechSynthesis.speak(msg);
-        }, 2000);
-	  }
-
-    function setupSelects() {
-        document.querySelectorAll('select').forEach(s => {
-            s.innerHTML = '<option value="">?</option>';
-            for(let i=0; i<=9; i++) s.innerHTML += `<option value="${i}">${i}</option>`;
-        });
-    }
-
-    function mod(type, val) {
-        const zoneId = (etape === 2) ? `z-${type}1` : `z-${type}2`;
-        if (val === 1) {
-            const div = document.createElement('div');
-            div.className = (type === 'c') ? 'plaque' : (type === 'd') ? 'barre' : 'cube';
-            div.onclick = function() { if(!this.classList.contains('grise')) this.classList.toggle('selected'); };
-            document.getElementById(zoneId).appendChild(div);
-        } else {
-            const z = document.getElementById(zoneId);
-            const actifs = Array.from(z.children).filter(e => !e.classList.contains('grise'));
-            if(actifs.length > 0) z.removeChild(actifs[actifs.length - 1]);
-        }
-    }
-
-    function maj() {
-        const c = document.getElementById('consigne');
-        if(etape === 1) c.innerText = "Pose l'opération en plaçant bien les chiffres.";
-        else if(etape === 2) c.innerText = `Décompose le premier nombre (${n1}).`;
-        else if(etape === 3 && mode === 'addition') c.innerText = `Décompose le deuxième nombre.`;
-        else if(etape === 3 && mode === 'soustraction') {
-            document.getElementById('btn-cass').style.display = 'inline-block';
-            let nom = subE==='u'?'unités':subE==='d'?'dizaines':'centaines';
-            let qte = (n2.toString().padStart(3,'0'))[subE==='u'?2:subE==='d'?1:0];
-            if(phaseSous === 1) c.innerText = `Sélectionne toutes les ${nom} que tu dois soustraire. Si tu n'en as pas assez, tu peux casser un item supérieur avant. Clique sur valider quand c'est fait.`;
-            else c.innerText = `Coche maintenant toutes les ${nom} restantes et inscris le bon nombre dans le résultat. Clique sur Valider quand tu as fini.`;
-            document.getElementById(subE + 'r').disabled = (phaseSous === 1);
-            document.getElementById(subE + 'r').classList.toggle('active-col', phaseSous === 2);
-        }
-        else if(etape === 4) {
-            c.innerText = `Compte les ${subE==='u'?'Unités':subE==='d'?'Dizaines':'Centaines'}.`;
-            document.getElementById('btn-conv').style.display = 'inline-block';
-            document.getElementById(subE + 'r').disabled = false;
-            document.getElementById(subE + 'r').classList.add('active-col');
-        }
-        lireConsigne();
-    }
-
-    function verifierEtape() {
-        const f = document.getElementById('feedback'); f.innerText = "";
-        if(etape === 1) {
-            if(parseInt(document.getElementById('c1').value + document.getElementById('d1').value + document.getElementById('u1').value) == n1 &&
-               parseInt(document.getElementById('c2').value + document.getElementById('d2').value + document.getElementById('u2').value) == n2) { etape++; success(); }
-            else error("Attention, place bien les chiffres dans les bonnes colonnes !");
-        }
-        else if(etape === 2 || (etape === 3 && mode === 'addition')) {
-            const target = (etape === 2) ? n1 : n2;
-            if(getVal(etape === 2 ? '1' : '2') === target) { etape++; success(); } else error("Attention, recompte attentivement.");
-        }
-        else if(mode === 'soustraction' && etape === 3) {
-            let qteCible = (n2.toString().padStart(3,'0'))[subE==='u'?2:subE==='d'?1:0];
-            if(phaseSous === 1) {
-                const sel = document.getElementById('container-'+subE).querySelectorAll('.selected');
-                if(sel.length == qteCible) {
-                    sel.forEach(e => { e.classList.remove('selected'); e.classList.add('grise'); });
-                    phaseSous = 2; success();
-                } else error(`Attention, tu dois sélectionner exactement ${qteCible} ${subE==='u'?'unités':subE==='d'?'dizaines':'centaines'}.`);
+    
+        function mod(type, val) {
+            const zoneId = (etape === 2) ? `z-${type}1` : `z-${type}2`;
+            if (val === 1) {
+                const div = document.createElement('div');
+                div.className = (type === 'c') ? 'plaque' : (type === 'd') ? 'barre' : 'cube';
+                div.onclick = function() { if(!this.classList.contains('grise')) this.classList.toggle('selected'); };
+                document.getElementById(zoneId).appendChild(div);
             } else {
-                const res = (n1 - n2).toString().padStart(3, '0');
+                const z = document.getElementById(zoneId);
+                const actifs = Array.from(z.children).filter(e => !e.classList.contains('grise'));
+                if(actifs.length > 0) z.removeChild(actifs[actifs.length - 1]);
+            }
+        }
+    
+        function maj() {
+            const c = document.getElementById('consigne');
+            if(etape === 1) c.innerText = "Pose l'opération en plaçant bien les chiffres.";
+            else if(etape === 2) c.innerText = `Décompose le premier nombre (${n1}).`;
+            else if(etape === 3 && mode === 'addition') c.innerText = `Décompose le deuxième nombre (${n2}).`;
+            else if(etape === 3 && mode === 'soustraction') {
+                document.getElementById('btn-cass').style.display = 'inline-block';
+                let nom = subE==='u'?'unités':subE==='d'?'dizaines':'centaines';
+                let qte = (n2.toString().padStart(3,'0'))[subE==='u'?2:subE==='d'?1:0];
+                if(phaseSous === 1) c.innerText = `Dans (${n2}), sélectionne toutes les ${nom} que tu dois soustraire. Si tu n'en as pas assez, tu peux casser un item supérieur avant.`;
+                else c.innerText = `Compte maintenant toutes les ${nom} restantes et inscris le bon nombre dans le résultat.`;
+                document.getElementById(subE + 'r').disabled = (phaseSous === 1);
+                document.getElementById(subE + 'r').classList.toggle('active-col', phaseSous === 2);
+            }
+            else if(etape === 4) {
+                c.innerText = `Compte les ${subE==='u'?'Unités':subE==='d'?'Dizaines':'Centaines'}.`;
+                document.getElementById('btn-conv').style.display = 'inline-block';
+                document.getElementById(subE + 'r').disabled = false;
+                document.getElementById(subE + 'r').classList.add('active-col');
+            }
+            lireConsigne();
+        }
+    
+        function verifierEtape() {
+            const f = document.getElementById('feedback'); f.innerText = "";
+            if(etape === 1) {
+                if(parseInt(document.getElementById('c1').value + document.getElementById('d1').value + document.getElementById('u1').value) == n1 &&
+                   parseInt(document.getElementById('c2').value + document.getElementById('d2').value + document.getElementById('u2').value) == n2) { etape++; success(); }
+                else error("Attention, place bien les chiffres dans les bonnes colonnes !");
+            }
+            else if(etape === 2 || (etape === 3 && mode === 'addition')) {
+                const target = (etape === 2) ? n1 : n2;
+                if(getVal(etape === 2 ? '1' : '2') === target) { etape++; success(); } else error("Attention, recompte attentivement.");
+            }
+            else if(mode === 'soustraction' && etape === 3) {
+                let qteCible = (n2.toString().padStart(3,'0'))[subE==='u'?2:subE==='d'?1:0];
+                if(phaseSous === 1) {
+                    const sel = document.getElementById('container-'+subE).querySelectorAll('.selected');
+                    if(sel.length == qteCible) {
+                        sel.forEach(e => { e.classList.remove('selected'); e.classList.add('grise'); });
+                        phaseSous = 2; success();
+                    } else error(`Attention, tu dois sélectionner exactement ${qteCible} ${subE==='u'?'unités':subE==='d'?'dizaines':'centaines'}.`);
+                } else {
+                    const res = (n1 - n2).toString().padStart(3, '0');
+                    const idx = subE === 'u' ? 2 : subE === 'd' ? 1 : 0;
+                    if(document.getElementById(subE+'r').value == res[idx]) {
+                        success();
+                        if(subE === 'u') { subE = 'd'; phaseSous = 1; }
+                        else if(subE === 'd') { subE = 'c'; phaseSous = 1; }
+                        else { fini(); }
+                    } else error("Attention, recompte attentivement.");
+                }
+            }
+            else if(etape === 4) {
+                const res = (n1 + n2).toString().padStart(3, '0');
                 const idx = subE === 'u' ? 2 : subE === 'd' ? 1 : 0;
                 if(document.getElementById(subE+'r').value == res[idx]) {
                     success();
-                    if(subE === 'u') { subE = 'd'; phaseSous = 1; }
-                    else if(subE === 'd') { subE = 'c'; phaseSous = 1; }
-                    else { fini(); }
-                } else error("Attention, recompte attentivement.");
+                    if(subE === 'u') subE = 'd'; else if(subE === 'd') subE = 'c';
+                    else fini();
+                } else error("Recompte bien cette colonne.");
             }
+            maj();
         }
-        else if(etape === 4) {
-            const res = (n1 + n2).toString().padStart(3, '0');
-            const idx = subE === 'u' ? 2 : subE === 'd' ? 1 : 0;
-            if(document.getElementById(subE+'r').value == res[idx]) {
-                success();
-                if(subE === 'u') subE = 'd'; else if(subE === 'd') subE = 'c';
-                else fini();
-            } else error("Recompte bien cette colonne.");
-        }
-        maj();
-    }
-
-    function getVal(s) { return document.getElementById('z-c'+s).children.length*100 + document.getElementById('z-d'+s).children.length*10 + document.getElementById('z-u'+s).children.length; }
-    function success() { document.getElementById('feedback').innerHTML = "<span style='color:green'>Très bien !</span>"; }
-    function error(m) { document.getElementById('feedback').innerHTML = "<span style='color:red'>" + m + "</span>"; }
-function fini() {
-    confetti();
-    document.getElementById('feedback').innerHTML = "✨ <b>FÉLICITATIONS !</b> ✨";
-
-    // Suppression de la ligne de consigne
-    document.querySelector('.consigne-box').style.display = 'none';
-
-    // Message oral final
-    window.speechSynthesis.cancel();
-    const msg = new SpeechSynthesisUtterance(
-        "Félicitations ! En continuant à t'entraîner tu vas devenir de plus en plus performant !"
-    );
-    msg.lang = 'fr-FR';
-    window.speechSynthesis.speak(msg);
-}
-
     
-    function lireConsigne() {
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(document.getElementById('consigne').innerText);
-        msg.lang = 'fr-FR'; window.speechSynthesis.speak(msg);
-    }
-
-    function convertir() {
-        ['u', 'd'].forEach(t => {
-            const sel = document.getElementById('container-' + t).querySelectorAll('.selected');
-            if(sel.length === 10) {
-                const next = t === 'u' ? 'd' : 'c';
-                sel.forEach(e => { e.classList.remove('selected'); e.classList.add('grise'); });
-                const item = document.createElement('div');
-                item.className = next === 'd' ? 'barre' : 'plaque';
-                item.onclick = function() { if(!this.classList.contains('grise')) this.classList.toggle('selected'); };
-                document.getElementById('z-'+next+'r').appendChild(item);
-                success();
-            }
-        });
-    }
-
-    function casser() {
-        ['c', 'd'].forEach(t => {
-            const sel = document.getElementById('container-' + t).querySelectorAll('.selected');
-            if(sel.length === 1) {
-                const prev = t === 'c' ? 'd' : 'u';
-                sel[0].classList.remove('selected'); sel[0].classList.add('grise');
-                for(let i=0; i<10; i++) {
+        function getVal(s) { return document.getElementById('z-c'+s).children.length*100 + document.getElementById('z-d'+s).children.length*10 + document.getElementById('z-u'+s).children.length; }
+        function success() { document.getElementById('feedback').innerHTML = "<span style='color:green'>Très bien !</span>"; }
+        function error(m) { document.getElementById('feedback').innerHTML = "<span style='color:red'>" + m + "</span>"; }
+    	function fini() {
+    		confetti();
+    		document.getElementById('feedback').innerHTML = "✨ <b>FÉLICITATIONS !</b> ✨";
+    
+    		// Suppression de la ligne de consigne
+    		document.querySelector('.consigne-box').style.display = 'none';
+    
+    		// Message oral final
+    		window.speechSynthesis.cancel();
+    		const msg = new SpeechSynthesisUtterance(
+    			"Félicitations ! En continuant à t'entraîner tu vas devenir de plus en plus performant !"
+    		);
+    		msg.lang = 'fr-FR';
+    		window.speechSynthesis.speak(msg);
+    	}
+    
+        
+        function lireConsigne() {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(document.getElementById('consigne').innerText);
+            msg.lang = 'fr-FR'; window.speechSynthesis.speak(msg);
+        }
+    
+        function convertir() {
+            ['u', 'd'].forEach(t => {
+                const sel = document.getElementById('container-' + t).querySelectorAll('.selected');
+                if(sel.length === 10) {
+                    const next = t === 'u' ? 'd' : 'c';
+                    sel.forEach(e => { e.classList.remove('selected'); e.classList.add('grise'); });
                     const item = document.createElement('div');
-                    item.className = prev === 'd' ? 'barre' : 'cube';
+                    item.className = next === 'd' ? 'barre' : 'plaque';
                     item.onclick = function() { if(!this.classList.contains('grise')) this.classList.toggle('selected'); };
-                    document.getElementById('z-'+prev+'r').appendChild(item);
+                    document.getElementById('z-'+next+'r').appendChild(item);
+                    success();
                 }
-                success();
-            }
-        });
-    }
-</script>
+            });
+        }
+    
+        function casser() {
+            ['c', 'd'].forEach(t => {
+                const sel = document.getElementById('container-' + t).querySelectorAll('.selected');
+                if(sel.length === 1) {
+                    const prev = t === 'c' ? 'd' : 'u';
+                    sel[0].classList.remove('selected'); sel[0].classList.add('grise');
+                    for(let i=0; i<10; i++) {
+                        const item = document.createElement('div');
+                        item.className = prev === 'd' ? 'barre' : 'cube';
+                        item.onclick = function() { if(!this.classList.contains('grise')) this.classList.toggle('selected'); };
+                        document.getElementById('z-'+prev+'r').appendChild(item);
+                    }
+                    success();
+                }
+            });
+        }
+    </script>
 </body>
 </html>
