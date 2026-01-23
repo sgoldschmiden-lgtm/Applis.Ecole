@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    
     <title>Mes Applis - ULIS</title>
     <link rel="icon" type="image/png" href="favicon.png">
     
@@ -11,98 +13,97 @@
             margin: 0;
             padding: 20px;
             font-family: sans-serif;
-            background-color: #f4f4f4; /* Couleur de fond légère */
+            background-color: #f4f4f4;
         }
 
-        /* Conteneur principal */
         .container {
             display: flex;
-            flex-wrap: wrap; /* Permet de passer à la ligne si l'espace manque */
+            flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 20px; /* Espacement entre les icônes */
-            min-height: 80vh; /* Centre verticalement sur l'écran */
+            gap: 20px;
+            min-height: 80vh;
         }
 
-        /* Style de chaque bloc d'application */
         .app-item {
-            flex: 1 1 250px; /* Taille de base 250px, s'étire si besoin */
+            flex: 1 1 250px;
             max-width: 300px;
             text-align: center;
         }
 
         .app-item img {
-            width: 100%; /* L'image prend toute la largeur du bloc parent */
-            max-width: 250px; /* Mais ne dépasse pas sa taille réelle */
+            width: 100%;
+            max-width: 250px;
             height: auto;
-            border-radius: 15px; /* Optionnel : arrondit les coins */
-            transition: transform 0.2s; /* Petit effet au survol */
+            border-radius: 15px;
+            transition: transform 0.2s
+			
+            /* Empêche le glisser-déposer d'images pour plus de sécurité */
+            user-select: none;
+            -webkit-user-drag: none;
         }
 
-        /* Effet au survol (souris) */
         .app-item img:hover {
             transform: scale(1.05);
         }
 
-        /* Adaptations pour mobile (écrans de moins de 600px) */
         @media (max-width: 600px) {
             .container {
-                flex-direction: column; /* Aligne les icônes verticalement */
+                flex-direction: column;
             }
             .app-item {
-                max-width: 150px; /* Réduit un peu la taille sur petit écran */
+                max-width: 150px;
             }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="app-item">
-            <a href="lecture.html">
-                <img src="images/lecture.png" alt="Lecture">
+    <main class="container"> <div class="app-item">
+            <a href="lecture.html" title="Aller vers l'exercice de lecture">
+                <img src="images/lecture.png" alt="Application de Lecture">
             </a>
         </div>
         <div class="app-item">
-            <a href="ecriture.html">
-                <img src="images/ecriture.png" alt="Écriture">
-            </a>
-        </div>
-		<div class="app-item">
-            <a href="conjugaison.html">
-                <img src="images/conjugaison.png" alt="Conjugaison">
-            </a>
-        </div>
-		<div class="app-item">
-            <a href="phrase.html">
-                <img src="images/phrase.png" alt="Nature des mots">
+            <a href="ecriture.html" title="Aller vers l'exercice d'écriture">
+                <img src="images/ecriture.png" alt="Application d'Écriture">
             </a>
         </div>
         <div class="app-item">
-            <a href="calcul.html">
-                <img src="images/calcul.png" alt="Calcul">
-            </a>
-        </div>
-		<div class="app-item">
-            <a href="reperage.html">
-                <img src="images/reperage.png" alt="Repérage">
+            <a href="conjugaison.html" title="Aller vers l'exercice de conjugaison">
+                <img src="images/conjugaison.png" alt="Application de Conjugaison">
             </a>
         </div>
         <div class="app-item">
-            <a href="problemes.html">
-                <img src="images/problemes.png" alt="Problèmes">
+            <a href="phrase.html" title="Aller vers l'exercice sur la nature des mots">
+                <img src="images/phrase.png" alt="Application Nature des mots">
             </a>
         </div>
-		<div class="app-item">
-            <a href="encadrement.html">
-                <img src="images/encadrement.png" alt="Encadrements">
+        <div class="app-item">
+            <a href="calcul.html" title="Aller vers l'exercice de calcul">
+                <img src="images/calcul.png" alt="Application de Calcul">
             </a>
         </div>
-		<div class="app-item">
-            <a href="mental.html">
-                <img src="images/mental.png" alt="Calcul Mental">
+        <div class="app-item">
+            <a href="reperage.html" title="Aller vers l'exercice de repérage">
+                <img src="images/reperage.png" alt="Application de Repérage">
             </a>
         </div>
-    </div>
+        <div class="app-item">
+            <a href="problemes.html" title="Aller vers l'exercice de problèmes">
+                <img src="images/problemes.png" alt="Application de Problèmes">
+            </a>
+        </div>
+        <div class="app-item">
+            <a href="encadrement.html" title="Aller vers l'exercice d'encadrements">
+                <img src="images/encadrement.png" alt="Application d'Encadrements">
+            </a>
+        </div>
+        <div class="app-item">
+            <a href="mental.html" title="Aller vers l'exercice de calcul mental">
+                <img src="images/mental.png" alt="Application de Calcul Mental">
+            </a>
+        </div>
+    </main>
 </body>
 </html>
