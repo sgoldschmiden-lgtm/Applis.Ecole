@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Conjugaison - L'Imparfait</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary: #4A90E2;
+            --secondary: #F5A623;
+            --success: #7ED321;
+            --error: #D0021B;
+            --bg: #F0F4F8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background: white;
+            width: 100%;
+            padding: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            margin: 0 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        .nav-btn:hover { transform: scale(1.05); }
+        .nav-btn.active { background: #2C3E50; border: 2px solid var(--secondary); }
+
+        #game-container {
+            max-width: 600px;
+            width: 90%;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .question { font-size: 1.3rem; margin-bottom: 25px; min-height: 60px; color: #333; }
+        .question b { color: var(--primary); }
+
+        /* Niveau 1 : QCM */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .option-btn {
+            padding: 15px;
+            font-size: 1.2rem;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+        }
+        .option-btn:hover { background: #f9f9f9; }
+
+        /* Niveau 2 : Clavier */
+        #input-answer {
+            width: 90%;
+            padding: 15px;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .keyboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 15px; }
+        .key {
+            padding: 10px 15px;
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            min-width: 35px;
+        }
+
+        .validate-btn {
+            padding: 15px 30px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        #feedback { margin-top: 20px; font-weight: bold; font-size: 1.2rem; height: 30px; }
+
+        .hidden { display: none; }
+        #score-display { font-size: 4rem; color: var(--primary); margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+	<header>
+		<button class="nav-btn" onclick="initGame(1)" id="btn-n1">Niveau 1 (QCM)</button>
+		<button class="nav-btn" onclick="initGame(2)" id="btn-n2">Niveau 2 (Clavier)</button>
+	</header>
+
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>  
+	<div id="game-container">
+		<div id="start-screen">
+			<h1>Apprendre l'Imparfait</h1>
+			<p>Choisis un niveau pour commencer.</p>
+		</div>
+
+		<div id="quiz-area" class="hidden">
+			<div id="progress">Question 1 / 10</div>
+			<div class="question" id="question-text"></div>
+			
+			<div id="level1-ui" class="options-grid"></div>
+
+			<div id="level2-ui" class="hidden">
+				<input type="text" id="input-answer" readonly placeholder="Tape la réponse...">
+				<div class="keyboard" id="virtual-keyboard"></div>
+				<button class="key" style="background:#ffccbc" onclick="clearInput()">Effacer</button>
+				<br><br>
+				<button class="validate-btn" onclick="checkAnswer()">Valider</button>
+			</div>
+
+			<div id="feedback"></div>
+		</div>
+
+		<div id="result-screen" class="hidden">
+			<h2>Partie terminée !</h2>
+			<div id="score-display">0/10</div>
+			<button class="nav-btn" onclick="location.reload()">Rejouer</button>
+		</div>
+	</div>
+
+<script>
+    const verbs = [
+        // 1er Groupe (7)
+        { v: "chanter", t: ["chantais", "chantais", "chantait", "chantions", "chantiez", "chantaient"] },
+        { v: "manger", t: ["mangeais", "mangeais", "mangeait", "mangiions", "mangiez", "mangeaient"] },
+        { v: "lancer", t: ["lançais", "lançais", "lançait", "lancions", "lanciez", "lançaient"] },
+        { v: "jouer", t: ["jouais", "jouais", "jouait", "jouions", "jouiez", "jouaient"] },
+        { v: "parler", t: ["parlais", "parlais", "parlait", "parlions", "parliez", "parlaient"] },
+        { v: "regarder", t: ["regardais", "regardais", "regardait", "regardions", "regardiez", "regardaient"] },
+        { v: "aimer", t: ["aimais", "aimais", "aimait", "aimions", "aimiez", "aimaient"] },
+        // 2ème Groupe (7)
+        { v: "finir", t: ["finissais", "finissais", "finissait", "finissions", "finissiez", "finissaient"] },
+        { v: "choisir", t: ["choisissais", "choisissais", "choisissait", "choisissions", "choisissiez", "choisissaient"] },
+        { v: "grandir", t: ["grandissais", "grandissais", "grandissait", "grandissions", "grandissiez", "grandissaient"] },
+        { v: "réussir", t: ["réussissais", "réussissais", "réussissait", "réussissions", "réussissiez", "réussissaient"] },
+        { v: "bondir", t: ["bondissais", "bondissais", "bondissait", "bondissions", "bondissiez", "bondissaient"] },
+        { v: "rougir", t: ["rougissais", "rougissais", "rougissait", "rougissions", "rougissiez", "rougissaient"] },
+        { v: "obéir", t: ["obéissais", "obéissais", "obéissait", "obéissions", "obéissiez", "obéissaient"] },
+        // 3ème Groupe (16)
+        { v: "être", t: ["étais", "étais", "était", "étions", "étiez", "étaient"] },
+        { v: "avoir", t: ["avais", "avais", "avait", "avions", "aviez", "avaient"] },
+        { v: "faire", t: ["faisais", "faisais", "faisait", "faisions", "faisiez", "faisaient"] },
+        { v: "aller", t: ["allais", "allais", "allait", "allions", "alliez", "allaient"] },
+        { v: "voir", t: ["voyais", "voyais", "voyait", "voyions", "voyiez", "voyaient"] },
+        { v: "vouloir", t: ["voulais", "voulais", "voulait", "voulions", "vouliez", "voulaient"] },
+        { v: "pouvoir", t: ["pouvais", "pouvais", "pouvait", "pouvions", "pouviez", "pouvaient"] },
+        { v: "prendre", t: ["prenais", "prenais", "prenait", "prenions", "preniez", "prenaient"] },
+        { v: "venir", t: ["venais", "venais", "venait", "venions", "veniez", "venaient"] },
+        { v: "dire", t: ["disais", "disais", "disait", "disions", "disiez", "disaient"] },
+        { v: "partir", t: ["partais", "partais", "partait", "partions", "partiez", "partaient"] },
+        { v: "savoir", t: ["savais", "savais", "savait", "savions", "saviez", "savaient"] },
+        { v: "devoir", t: ["devais", "devais", "devait", "devions", "deviez", "devaient"] },
+        { v: "mettre", t: ["mettais", "mettais", "mettait", "mettions", "mettiez", "mettaient"] },
+        { v: "croire", t: ["croyais", "croyais", "croyait", "croyions", "croyiez", "croyaient"] },
+        { v: "rire", t: ["riais", "riais", "riait", "riions", "riiez", "riaient"] }
+    ];
+
+    const pronouns = ["1ère personne du singulier (Je)", "2e personne du singulier (Tu)", "3e personne du singulier (Il/Elle/On)", "1ère personne du pluriel (Nous)", "2e personne du pluriel (Vous)", "3e personne du pluriel (Ils/Elles)"];
+    
+    let currentLevel = 1;
+    let score = 0;
+    let questionCount = 0;
+    let currentQuestion = {};
+
+    function initGame(lvl) {
+        currentLevel = lvl;
+        score = 0;
+        questionCount = 0;
+        document.getElementById('btn-n1').classList.toggle('active', lvl === 1);
+        document.getElementById('btn-n2').classList.toggle('active', lvl === 2);
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
+        document.getElementById('quiz-area').classList.remove('hidden');
+        if(lvl === 2) createKeyboard();
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        if (questionCount >= 10) return endGame();
+        
+        questionCount++;
+        document.getElementById('progress').innerText = `Question ${questionCount} / 10`;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('input-answer').value = "";
+        
+        const randomVerb = verbs[Math.floor(Math.random() * verbs.length)];
+        const pIdx = Math.floor(Math.random() * 6);
+        
+        currentQuestion = {
+            verb: randomVerb.v,
+            pronoun: pronouns[pIdx],
+            correct: randomVerb.t[pIdx],
+            allForms: randomVerb.t
+        };
+
+        document.getElementById('question-text').innerHTML = `Comment se conjugue le verbe <b>${currentQuestion.verb.toUpperCase()}</b> à l'imparfait pour la <b>${currentQuestion.pronoun}</b> ?`;
+
+        if (currentLevel === 1) {
+            setupLvl1();
+        } else {
+            setupLvl2();
+        }
+    }
+
+    function setupLvl1() {
+        document.getElementById('level1-ui').classList.remove('hidden');
+        document.getElementById('level2-ui').classList.add('hidden');
+        const ui = document.getElementById('level1-ui');
+        ui.innerHTML = "";
+
+        // Générer des distracteurs (autres personnes du même verbe)
+        let choices = [...new Set(currentQuestion.allForms)];
+        while(choices.length < 4) choices.push("erait", "era"); // Sécurité
+        choices = choices.sort(() => Math.random() - 0.5).slice(0, 4);
+        if(!choices.includes(currentQuestion.correct)) choices[0] = currentQuestion.correct;
+        choices.sort(() => Math.random() - 0.5);
+
+        choices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = c;
+            btn.onclick = () => checkAnswer(c);
+            ui.appendChild(btn);
+        });
+    }
+
+    function setupLvl2() {
+        document.getElementById('level1-ui').classList.add('hidden');
+        document.getElementById('level2-ui').classList.remove('hidden');
+    }
+
+    function createKeyboard() {
+        const keys = "abcdefghijklmnopqrstuvwxyzéèêçîïôû".split("");
+        const kb = document.getElementById('virtual-keyboard');
+        kb.innerHTML = "";
+        keys.forEach(k => {
+            const b = document.createElement('button');
+            b.className = "key";
+            b.innerText = k;
+            b.onclick = () => document.getElementById('input-answer').value += k;
+            kb.appendChild(b);
+        });
+    }
+
+    function clearInput() { document.getElementById('input-answer').value = ""; }
+
+    function checkAnswer(val) {
+        const userAns = val || document.getElementById('input-answer').value.toLowerCase().trim();
+        const f = document.getElementById('feedback');
+        
+        if (userAns === currentQuestion.correct) {
+            score++;
+            f.style.color = "var(--success)";
+            f.innerText = "Bravo ! C'est exact. ✨";
+        } else {
+            f.style.color = "var(--error)";
+            f.innerText = `Dommage... La réponse était : ${currentQuestion.correct}`;
+        }
+
+        setTimeout(nextQuestion, 2000);
+    }
+
+    function endGame() {
+        document.getElementById('quiz-area').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('score-display').innerText = `${score} / 10`;
+        
+        if(score >= 7) {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
+    }
+</script>
+
+</body>
+</html>

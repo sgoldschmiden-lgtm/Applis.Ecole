@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULIS : Apprends le Corps Humain !</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary-color: #4A90E2;
+            --success-color: #2ECC71;
+            --wrong-color: #E74C3C;
+            --bg-color: #F0F4F8;
+            --label-color: #333;
+            --label-bg: #E1F5FE;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 15px;
+            max-width: 95%;
+            width: 700px;
+            text-align: center;
+        }
+
+        h1 { color: var(--primary-color); font-size: 1.8em; margin-bottom: 10px; }
+        .instruction { font-size: 1.1em; margin-bottom: 15px; color: #555; }
+
+        #mode-selection {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: 2px solid var(--primary-color);
+            border-radius: 50px;
+            background-color: white;
+            color: var(--primary-color);
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        #game-area {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .game-content {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        #game-canvas {
+            position: relative;
+            width: 100%; 
+            max-width: 320px;
+            min-height: 400px;
+            border: 3px solid #DDD;
+            border-radius: 15px;
+            background: white;
+        }
+
+        #game-canvas img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 12px;
+        }
+
+        #game-canvas .drop-zone {
+            position: absolute;
+            width: 75px;
+            height: 32px;
+            border: 2px dashed #999;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: #777;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        /* Positions Corps & Articulations */
+        #zone-tete { top: 5%; left: 37%; }
+        #zone-poitrine { top: 25%; left: 37%; }
+        #zone-ventre { top: 40%; left: 37%; }
+        #zone-bras { top: 31%; left: 5%; }
+        #zone-avant-bras { top: 43%; left: 4%; }
+        #zone-main { top: 51%; left: 3%; }
+        #zone-cuisse { top: 60%; left: 46%; }
+        #zone-jambe { top: 76%; left: 45%; }
+        #zone-pied { top: 90%; left: 44%; }
+        #zone-cou { top: 17%; left: 37%; }
+        #zone-epaule { top: 22%; left: 15%; }
+        #zone-coude { top: 38%; left: 13%; }
+        #zone-poignet { top: 49%; left: 10%; }
+        #zone-hanches { top: 52%; left: 49%; }
+        #zone-genou { top: 68%; left: 47%; }
+        #zone-cheville { top: 89%; left: 44%; }
+
+        /* Positions Visage & Main (Format carré 1:1) */
+        #z-cheveux { top: 5%; left: 38%; }
+        #z-front { top: 20%; left: 38%; }
+		#z-tempe { top: 27%; left: 66%; }
+        #z-oeil { top: 38%; left: 25%; }
+		#z-pommette { top: 45%; left: 65%; }
+        #z-nez { top: 50%; left: 38%; }
+		#z-joue { top: 55%; left: 12%; }
+        #z-bouche { top: 60%; left: 38%; }
+        #z-menton { top: 70%; left: 38%; }
+        #z-pouce { top: 45%; left: 0%; }
+        #z-index { top: 20%; left: 15%; }
+        #z-majeur { top: 8%; left: 35%; }
+		#z-annulaire { top: 20%; left: 60%; }
+		#z-auriculaire { top: 35%; left: 75%; }
+        #z-paume { top: 60%; left: 40%; }
+
+        #labels-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 10px;
+            background-color: #F8F9FA;
+            border-radius: 10px;
+            max-width: 300px;
+            width: 100%;
+        }
+
+        .label {
+            padding: 8px 12px;
+            background-color: var(--label-bg);
+            border-radius: 50px;
+            cursor: grab;
+            font-size: 0.9em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #validate-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            color: white;
+            background-color: var(--success-color);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            display: none;
+        }
+
+        #score-display {
+            display: none;
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: var(--primary-color);
+            background: #E1F5FE;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .drop-zone.correct { border-color: var(--success-color); background-color: rgba(46, 204, 113, 0.2); }
+        .drop-zone.incorrect { border-color: var(--wrong-color); background-color: rgba(231, 76, 60, 0.2); }
+        .drop-zone.filled { border-style: solid; color: #333; }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+<div class="container">
+    <h1>Apprends l'anatomie</h1>
+    
+    <div id="mode-selection">
+        <button class="mode-btn" id="mode-corps" onclick="startGame('corps')">Corps</button>
+        <button class="mode-btn" id="mode-articulations" onclick="startGame('articulations')">Articulations</button>
+        <button class="mode-btn" id="mode-visage" onclick="startGame('visage')">Visage</button>
+        <button class="mode-btn" id="mode-main" onclick="startGame('main')">Main</button>
+    </div>
+
+    <div id="game-area">
+        <p class="instruction">Glisse les mots dans les bonnes cases.</p>
+        
+        <div class="game-content">
+            <div id="labels-container"></div>
+
+            <div id="game-canvas">
+                <img src="images/corps.png" id="main-image" alt="Schéma">
+                
+                <div class="drop-zone mode-corps-zone" id="zone-tete" data-target="La Tête" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-poitrine" data-target="La Poitrine" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-ventre" data-target="Le Ventre" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-bras" data-target="Le Bras" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-avant-bras" data-target="L'Avant-bras" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-main" data-target="La Main" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-cuisse" data-target="La Cuisse" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-jambe" data-target="La Jambe" style="display:none">?</div>
+                <div class="drop-zone mode-corps-zone" id="zone-pied" data-target="Le Pied" style="display:none">?</div>
+
+                <div class="drop-zone mode-articulations-zone" id="zone-cou" data-target="Le Cou" style="display:none">?</div>
+                <div class="drop-zone mode-articulations-zone" id="zone-epaule" data-target="L'Épaule" style="display:none">?</div>
+                <div class="drop-zone mode-articulations-zone" id="zone-coude" data-target="Le Coude" style="display:none">?</div>
+                <div class="drop-zone mode-articulations-zone" id="zone-poignet" data-target="Le Poignet" style="display:none">?</div>
+                <div class="drop-zone mode-articulations-zone" id="zone-hanches" data-target="Les Hanches" style="display:none">?</div>
+                <div class="drop-zone mode-articulations-zone" id="zone-genou" data-target="Le Genou" style="display:none">?</div>
+                <div class="drop-zone mode-articulations-zone" id="zone-cheville" data-target="La Cheville" style="display:none">?</div>
+
+                <div class="drop-zone mode-visage-zone" id="z-cheveux" data-target="Les Cheveux" style="display:none">?</div>
+                <div class="drop-zone mode-visage-zone" id="z-front" data-target="Le Front" style="display:none">?</div>
+				<div class="drop-zone mode-visage-zone" id="z-tempe" data-target="La Tempe" style="display:none">?</div>
+                <div class="drop-zone mode-visage-zone" id="z-oeil" data-target="L'Œil" style="display:none">?</div>
+				<div class="drop-zone mode-visage-zone" id="z-pommette" data-target="La Pommette" style="display:none">?</div>
+                <div class="drop-zone mode-visage-zone" id="z-nez" data-target="Le Nez" style="display:none">?</div>
+				<div class="drop-zone mode-visage-zone" id="z-joue" data-target="La Joue" style="display:none">?</div>
+                <div class="drop-zone mode-visage-zone" id="z-bouche" data-target="La Bouche" style="display:none">?</div>
+                <div class="drop-zone mode-visage-zone" id="z-menton" data-target="Le Menton" style="display:none">?</div>
+
+                <div class="drop-zone mode-main-zone" id="z-pouce" data-target="Le Pouce" style="display:none">?</div>
+                <div class="drop-zone mode-main-zone" id="z-index" data-target="L'Index" style="display:none">?</div>
+                <div class="drop-zone mode-main-zone" id="z-majeur" data-target="Le Majeur" style="display:none">?</div>
+				<div class="drop-zone mode-main-zone" id="z-annulaire" data-target="L'Annulaire" style="display:none">?</div>
+				<div class="drop-zone mode-main-zone" id="z-auriculaire" data-target="L'Auriculaire" style="display:none">?</div>
+                <div class="drop-zone mode-main-zone" id="z-paume" data-target="La Paume" style="display:none">?</div>
+            </div>
+        </div>
+
+        <button id="validate-btn" onclick="validateAnswers()">Valider</button>
+        <div id="score-display">Score : <span id="score-value">0</span> / 10</div>
+    </div>
+</div>
+
+<script>
+    const dataVisage = ["Les Cheveux", "Le Front", "La Tempe", "L'Œil", "La Pommette", "Le Nez", "La Joue", "La Bouche", "Le Menton"];
+    const dataMain = ["La Paume", "Le Pouce", "L'Index", "Le Majeur", "L'Annulaire", "L'Auriculaire"];
+    const dataCorps = ["La Tête", "La Poitrine", "Le Ventre", "Le Bras", "L'Avant-bras", "La Main", "La Cuisse", "La Jambe", "Le Pied"];
+    const dataArticulations = ["Le Cou", "L'Épaule", "Le Coude", "Le Poignet", "Les Hanches", "Le Genou", "La Cheville"];
+    
+    let currentMode = '';
+
+    function startGame(mode) {
+        currentMode = mode;
+        
+        // Mise à jour visuelle des boutons
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`mode-${mode}`).classList.add('active');
+
+        // Affichage de la zone de jeu
+        document.getElementById('game-area').style.display = 'block';
+        document.getElementById('validate-btn').style.display = 'inline-block';
+        document.getElementById('score-display').style.display = 'none';
+
+        // Changement de l'image
+        const imgElement = document.getElementById('main-image');
+        if (mode === 'visage') imgElement.src = 'images/visage.png';
+        else if (mode === 'main') imgElement.src = 'images/main.png';
+        else imgElement.src = 'images/corps.png';
+
+        // Sélection des données
+        let currentData;
+        if (mode === 'corps') currentData = dataCorps;
+        else if (mode === 'articulations') currentData = dataArticulations;
+        else if (mode === 'visage') currentData = dataVisage;
+        else if (mode === 'main') currentData = dataMain;
+
+        // Réinitialisation des étiquettes
+        const labelsContainer = document.getElementById('labels-container');
+        labelsContainer.innerHTML = '';
+
+        // Gestion des zones
+        const zones = document.querySelectorAll('.drop-zone');
+        zones.forEach(zone => {
+            if (zone.classList.contains(`mode-${mode}-zone`)) {
+                zone.style.display = 'flex';
+                zone.innerText = '?';
+                zone.classList.remove('filled', 'correct', 'incorrect');
+            } else {
+                zone.style.display = 'none';
+            }
+        });
+
+        // Mélange et création des étiquettes
+        const shuffledData = [...currentData].sort(() => Math.random() - 0.5);
+        shuffledData.forEach(text => {
+            const labelEl = document.createElement('div');
+            labelEl.classList.add('label');
+            labelEl.innerText = text;
+            labelEl.setAttribute('draggable', 'true');
+            
+            labelEl.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', e.target.innerText);
+            });
+            labelsContainer.appendChild(labelEl);
+        });
+
+        // Activation du Drag & Drop
+        document.querySelectorAll(`.mode-${mode}-zone`).forEach(zone => {
+            zone.addEventListener('dragover', (e) => e.preventDefault());
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const text = e.dataTransfer.getData('text/plain');
+                zone.innerText = text;
+                zone.classList.add('filled');
+            });
+        });
+    }
+
+    function validateAnswers() {
+        let correctCount = 0;
+        let activeZones = document.querySelectorAll(`.mode-${currentMode}-zone`);
+        
+        activeZones.forEach(zone => {
+            if (zone.innerText === zone.getAttribute('data-target')) {
+                correctCount++;
+                zone.classList.add('correct');
+            } else {
+                zone.classList.add('incorrect');
+            }
+        });
+
+        const finalScore = Math.round((correctCount / activeZones.length) * 10);
+        document.getElementById('score-value').innerText = finalScore;
+        document.getElementById('score-display').style.display = 'block';
+        document.getElementById('validate-btn').style.display = 'none';
+
+        if (finalScore >= 7) {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }
+    }
+</script>
+</body>
+</html>

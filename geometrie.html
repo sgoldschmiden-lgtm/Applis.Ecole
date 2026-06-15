@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Géométrie</title>
+    <!-- Inclusion de la bibliothèque de confettis -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary: #4a6fa5;
+            --primary-hover: #3b5a84;
+            --success: #2ec4b6;
+            --danger: #e71d36;
+            --background: #f0f4f8;
+            --card-bg: #ffffff;
+            --text: #2b2d42;
+            --geo-color: #ff9f1c; /* Couleur des formes géométriques */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 25px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.6rem;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1rem;
+            background: #edf2f4;
+            padding: 10px 20px;
+            border-radius: 50px;
+        }
+
+        /* Zone d'illustration SVG */
+        .illustration-box {
+            width: 100%;
+            height: 160px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #e2e8f0;
+        }
+
+        .illustration-box svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .question-box {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+            min-height: 50px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 480px) {
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        button {
+            background-color: #fff;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 14px 15px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+        }
+
+        button.correct {
+            background-color: var(--success) !important;
+            border-color: var(--success) !important;
+            color: white !important;
+        }
+
+        button.wrong {
+            background-color: var(--danger) !important;
+            border-color: var(--danger) !important;
+            color: white !important;
+            position: relative;
+        }
+
+        .wrong::after {
+            content: '❌';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.1rem;
+            animation: pop 0.3s ease;
+        }
+
+        .result-screen {
+            display: none;
+        }
+
+        .score-big {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--success);
+            margin: 20px 0;
+        }
+
+        .btn-restart {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            margin-top: 25px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+        }
+
+        @keyframes pop {
+            0% { transform: translateY(-50%) scale(0); }
+            80% { transform: translateY(-50%) scale(1.3); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a> 
+
+    <div class="container">
+        <!-- ÉCRAN DE JEU -->
+        <div id="quiz-screen">
+            <h1>Vocabulaire de Géométrie</h1>
+            <div class="header-info">
+                <span id="progress">Question : 1/10</span>
+                <span id="score-display">Score : 0</span>
+            </div>
+            
+            <!-- Zone d'affichage du dessin de la forme -->
+            <div class="illustration-box" id="illustration-container"></div>
+
+            <div class="question-box" id="question-text"></div>
+            <div class="options-grid" id="options-container"></div>
+        </div>
+
+        <!-- ÉCRAN DE FIN -->
+        <div id="result-screen" class="result-screen">
+            <h1>🎉 Partie Terminée ! 🎉</h1>
+            <p id="feedback-message" style="font-size: 1.2rem; margin-top: 10px;"></p>
+            <div class="score-big" id="final-score">0 / 10</div>
+            <button class="btn-restart" onclick="startGame()">Rejouer</button>
+        </div>
+    </div>
+
+    <script>
+        // Base de données incluant les codes de dessins SVG pour chaque forme géométrique
+        const database = [
+            { 
+                word: "droite", 
+                def: "Une ligne infinie, sans début ni fin, tracée à la règle.",
+                svg: '<svg viewBox="0 0 200 100"><line x1="10" y1="50" x2="190" y2="50" stroke="#ff9f1c" stroke-width="4" stroke-dasharray="none"/><path d="M 10 50 L 25 45 M 10 50 L 25 55 M 190 50 L 175 45 M 190 50 L 175 55" stroke="#ff9f1c" stroke-width="3" fill="none"/></svg>'
+            },
+            { 
+                word: "demi-droite", 
+                def: "Une ligne qui a un point de départ (une origine) mais pas de fin.",
+                svg: '<svg viewBox="0 0 200 100"><circle cx="40" cy="50" r="6" fill="#2b2d42"/><line x1="40" y1="50" x2="180" y2="50" stroke="#ff9f1c" stroke-width="4"/><path d="M 180 50 L 165 45 M 180 50 L 165 55" stroke="#ff9f1c" stroke-width="3" fill="none"/><text x="35" y="75" font-family="sans-serif" font-weight="bold">O</text></svg>'
+            },
+            { 
+                word: "segment", 
+                def: "Une portion de ligne droite délimitée par deux points (les extrémités).",
+                svg: '<svg viewBox="0 0 200 100"><circle cx="40" cy="50" r="6" fill="#2b2d42"/><circle cx="160" cy="50" r="6" fill="#2b2d42"/><line x1="40" y1="50" x2="160" y2="50" stroke="#ff9f1c" stroke-width="4"/><text x="35" y="75" font-weight="bold">A</text><text x="155" y="75" font-weight="bold">B</text></svg>'
+            },
+            { 
+                word: "point", 
+                def: "L'élément géométrique le plus simple, représenté graphiquement par une croix.",
+                svg: '<svg viewBox="0 0 200 100"><line x1="90" y1="40" x2="110" y2="60" stroke="#e71d36" stroke-width="4"/><line x1="110" y1="40" x2="90" y2="60" stroke="#e71d36" stroke-width="4"/><text x="115" y="45" font-weight="bold">M</text></svg>'
+            },
+            { 
+                word: "carré", 
+                def: "Une figure plane à 4 côtés de même longueur et 4 angles droits.",
+                svg: '<svg viewBox="0 0 200 100"><rect x="65" y="15" width="70" height="70" fill="none" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "triangle", 
+                def: "Une figure plane qui possède exactement 3 côtés et 3 sommets.",
+                svg: '<svg viewBox="0 0 200 100"><polygon points="100,15 50,85 150,85" fill="none" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "cercle", 
+                def: "L'ensemble de tous les points situés à égale distance d'un point qu'on appelle le centre.",
+                svg: '<svg viewBox="0 0 200 100"><circle cx="100" cy="50" r="38" fill="none" stroke="#ff9f1c" stroke-width="4"/><circle cx="100" cy="50" r="3" fill="#2b2d42"/></svg>'
+            },
+            { 
+                word: "rectangle", 
+                def: "Une figure plane à 4 côtés avec 4 angles droits, dont les côtés opposés sont de même longueur.",
+                svg: '<svg viewBox="0 0 200 100"><rect x="40" y="20" width="120" height="60" fill="none" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "losange", 
+                def: "Une figure plane à 4 côtés de même longueur, sans angles droits requis.",
+                svg: '<svg viewBox="0 0 200 100"><polygon points="100,10 150,50 100,90 50,50" fill="none" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "pentagone", 
+                def: "Un polygone qui possède exactement 5 côtés.",
+                svg: '<svg viewBox="0 0 200 100"><polygon points="100,12 145,45 128,90 72,90 55,45" fill="none" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "hexagone", 
+                def: "Un polygone qui possède exactement 6 côtés.",
+                svg: '<svg viewBox="0 0 200 100"><polygon points="100,12 143,37 143,83 100,100 57,83 57,37" fill="none" stroke="#ff9f1c" stroke-width="4" transform="rotate(30 100 50)"/></svg>'
+            },
+            { 
+                word: "octogone", 
+                def: "Un polygone qui possède exactement 8 côtés (comme un panneau Stop).",
+                svg: '<svg viewBox="0 0 200 100"><polygon points="100,10 135,23 150,54 135,85 100,95 65,85 50,54 65,23" fill="none" stroke="#ff9f1c" stroke-width="4" transform="scale(0.9) translate(11, 5)"/></svg>'
+            },
+            { 
+                word: "trapèze", 
+                def: "Un quadrilatère qui possède deux côtés opposés parallèles de longueurs différentes.",
+                svg: '<svg viewBox="0 0 200 100"><polygon points="60,20 140,20 170,80 30,80" fill="none" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "parallèle", 
+                def: "Se dit de deux droites qui conservent le même écartement et ne se coupent jamais.",
+                svg: '<svg viewBox="0 0 200 100"><line x1="30" y1="35" x2="170" y2="35" stroke="#ff9f1c" stroke-width="4"/><line x1="30" y1="65" x2="170" y2="65" stroke="#ff9f1c" stroke-width="4"/></svg>'
+            },
+            { 
+                word: "perpendiculaire", 
+                def: "Se dit de deux droites qui se croisent en formant un angle droit parfait (90°).",
+                svg: '<svg viewBox="0 0 200 100"><line x1="100" y1="10" x2="100" y2="90" stroke="#ff9f1c" stroke-width="4"/><line x1="40" y1="50" x2="160" y2="50" stroke="#ff9f1c" stroke-width="4"/><rect x="100" y="50" width="12" height="12" fill="none" stroke="#2b2d42" stroke-width="2"/></svg>'
+            },
+            { 
+                word: "cube", 
+                def: "Un solide régulier en 3D dont les 6 faces sont des carrés identiques.",
+                svg: '<svg viewBox="0 0 200 100" stroke="#ff9f1c" stroke-width="3" fill="none"><rect x="50" y="35" width="50" height="50"/><rect x="75" y="15" width="50" height="50" stroke-opacity="0.6"/><line x1="50" y1="35" x2="75" y2="15"/><line x1="100" y1="35" x2="125" y2="15"/><line x1="50" y1="85" x2="75" y2="65"/><line x1="100" y1="85" x2="125" y2="65"/></svg>'
+            },
+            { 
+                word: "sphère ou boule", 
+                def: "Un solide en 3D parfaitement rond dans toutes les directions, comme un ballon.",
+                svg: '<svg viewBox="0 0 200 100"><circle cx="100" cy="50" r="40" fill="none" stroke="#ff9f1c" stroke-width="4"/><ellipse cx="100" cy="50" rx="40" ry="12" fill="none" stroke="#ff9f1c" stroke-width="2" stroke-dasharray="4 4"/></svg>'
+            },
+            { 
+                word: "pavé droit", 
+                def: "Un solide en 3D (parallélépipède rectangle) dont les 6 faces sont des rectangles.",
+                svg: '<svg viewBox="0 0 200 100" stroke="#ff9f1c" stroke-width="3" fill="none"><rect x="40" y="40" width="80" height="45"/><rect x="70" y="15" width="80" height="45" stroke-opacity="0.6"/><line x1="40" y1="40" x2="70" y2="15"/><line x1="120" y1="40" x2="150" y2="15"/><line x1="40" y1="85" x2="70" y2="60"/><line x1="120" y1="85" x2="150" y2="60"/></svg>'
+            },
+            { 
+                word: "pyramide", 
+                def: "Un solide avec une base polygonale et des faces triangulaires qui s'élèvent vers un sommet unique.",
+                svg: '<svg viewBox="0 0 200 100" stroke="#ff9f1c" stroke-width="3" fill="none"><polygon points="40,80 120,85 160,65 80,60" stroke-opacity="0.5"/><line x1="100" y1="15" x2="40" y2="80"/><line x1="100" y1="15" x2="120" y2="85"/><line x1="100" y1="15" x2="160" y2="65"/><line x1="100" y1="15" x2="80" y2="60" stroke-opacity="0.4"/></svg>'
+            },
+            { 
+                word: "cône", 
+                def: "Un solide en 3D avec une base circulaire se terminant en pointe au sommet.",
+                svg: '<svg viewBox="0 0 200 100" stroke="#ff9f1c" stroke-width="3" fill="none"><ellipse cx="100" cy="80" rx="40" ry="12"/><line x1="60" y1="80" x2="100" y2="15"/><line x1="140" y1="80" x2="100" y2="15"/></svg>'
+            },
+            { 
+                word: "cylindre", 
+                def: "Un solide avec deux bases circulaires parallèles reliées par une surface courbée.",
+                svg: '<svg viewBox="0 0 200 100" stroke="#ff9f1c" stroke-width="3" fill="none"><ellipse cx="100" cy="25" rx="35" ry="10"/><ellipse cx="100" cy="75" rx="35" ry="10"/><line x1="65" y1="25" x2="65" y2="75"/><line x1="135" y1="25" x2="135" y2="75"/></svg>'
+            }
+        ];
+
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let canAnswer = true;
+
+        window.onload = startGame;
+
+        function startGame() {
+            score = 0;
+            currentQuestionIndex = 0;
+            canAnswer = true;
+            
+            // Mélanger et isoler 10 questions aléatoires
+            currentQuestions = [...database].sort(() => 0.5 - Math.random()).slice(0, 10);
+            
+            document.getElementById("quiz-screen").style.display = "block";
+            document.getElementById("result-screen").style.display = "none";
+            
+            showQuestion();
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById("score-display").innerText = `Score : ${score}`;
+            document.getElementById("progress").innerText = `Question : ${currentQuestionIndex + 1}/10`;
+        }
+
+        function showQuestion() {
+            canAnswer = true;
+            updateScoreDisplay();
+            
+            const currentQ = currentQuestions[currentQuestionIndex];
+            
+            // Injecter l'image SVG correspondante
+            document.getElementById("illustration-container").innerHTML = currentQ.svg;
+            
+            // Injecter la consigne
+            document.getElementById("question-text").innerText = `Qui suis-je ? \n\n "${currentQ.def}"`;
+            
+            // Générer les propositions (1 vraie + 3 fausses)
+            let options = [currentQ.word];
+            let distractors = database.filter(item => item.word !== currentQ.word);
+            distractors.sort(() => 0.5 - Math.random());
+            
+            for (let i = 0; i < 3; i++) {
+                options.push(distractors[i].word);
+            }
+            
+            // Mélanger les options
+            options.sort(() => 0.5 - Math.random());
+            
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+            
+            options.forEach(option => {
+                const button = document.createElement("button");
+                button.innerText = option.charAt(0).toUpperCase() + option.slice(1);
+                button.onclick = () => checkAnswer(button, option, currentQ.word);
+                container.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedButton, chosenWord, correctWord) {
+            if (!canAnswer) return;
+            canAnswer = false;
+
+            const buttons = document.querySelectorAll("#options-container button");
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (chosenWord === correctWord) {
+                selectedButton.classList.add("correct");
+                score++;
+                updateScoreDisplay();
+                
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+            } else {
+                selectedButton.classList.add("wrong");
+                
+                // Révéler la réponse attendue en vert
+                buttons.forEach(btn => {
+                    if (btn.innerText.toLowerCase() === correctWord) {
+                        btn.classList.add("correct");
+                    }
+                });
+            }
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < 10) {
+                    showQuestion();
+                } else {
+                    endGame();
+                }
+            }, 2500); // 2.5 secondes d'attente pour bien observer le schéma
+        }
+
+        function endGame() {
+            document.getElementById("quiz-screen").style.display = "none";
+            document.getElementById("result-screen").style.display = "block";
+            
+            document.getElementById("final-score").innerText = `${score} / 10`;
+            
+            const messageEl = document.getElementById("feedback-message");
+            if(score === 10) {
+                messageEl.innerText = "🏆 Score parfait ! Tu as le compas dans l'œil !";
+            } else if (score >= 7) {
+                messageEl.innerText = "🌟 Très bon travail ! C'est un super score !";
+            } else if (score >= 5) {
+                messageEl.innerText = "👍 Moyenne validée ! Continue de réviser les formes en 3D !";
+            } else {
+                messageEl.innerText = "💪 Ne lâche rien ! Entraîne-toi encore pour progresser !";
+            }
+
+            // Explosion finale massive de confettis
+            var duration = 4 * 1000;
+            var end = Date.now() + duration;
+
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    </script>
+</body>
+</html>

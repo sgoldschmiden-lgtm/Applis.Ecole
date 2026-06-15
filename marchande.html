@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de la Marchande - Apprendre la Monnaie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; 
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+			
+        .money-btn:active 
+			{ transform: scale(0.95); 
+			}
+			
+        .coin 
+			{ width: 60px; 
+			height: 60px; 
+			object-fit: contain; 
+			}
+			
+        .bill 
+			{ width: 100px; 
+			height: 50px; 
+			object-fit: contain; 
+			}
+			
+		.pop-up 
+			{ animation: pop 0.4s ease-out forwards; 
+			}
+
+		.overlay 
+			{ display: none; 
+			position: fixed; 
+			inset: 0; 
+			z-index: 50; 
+			align-items: center; 
+			justify-content: center; 
+			background: rgba(0,0,0,0.4); 
+			}
+			
+		@keyframes pop 
+			{
+			0% { transform: scale(0); opacity: 0; }
+			80% { transform: scale(1.2); }
+			100% { transform: scale(1); opacity: 1; }
+			}
+    </style>
+</head>
+<body class="bg-blue-50 min-h-screen flex flex-col items-center p-4 font-sans">
+
+	<a href="index.html" class="btn btn-change-game">
+        Changer de jeu
+    </a>    
+
+	<div id="feedback-overlay" class="overlay" onclick="this.style.display='none'">
+		<div id="feedback-content" class="bg-white p-8 rounded-3xl shadow-2xl text-center pop-up mx-4">
+			<div id="feedback-icon" class="text-8xl mb-4"></div>
+			<div id="feedback-text" class="text-2xl font-bold"></div>
+		</div>
+	</div>
+
+    <header class="w-full max-w-4xl bg-white p-4 rounded-xl shadow-md mb-6">
+        <h1 class="text-2xl font-bold text-center text-blue-600 mb-4">🛒 La Petite Marchande</h1>
+        <div class="flex flex-wrap justify-center gap-2">
+            <button onclick="setLevel(1)" class="level-btn bg-green-500 text-white px-3 py-1 rounded-full text-sm">Niv 1: < 20€ (1 objet)</button>
+            <button onclick="setLevel(2)" class="level-btn bg-yellow-500 text-white px-3 py-1 rounded-full text-sm">Niv 2: < 20€ (Multi)</button>
+            <button onclick="setLevel(3)" class="level-btn bg-orange-500 text-white px-3 py-1 rounded-full text-sm">Niv 3: < 100€</button>
+            <button onclick="setLevel(4)" class="level-btn bg-red-500 text-white px-3 py-1 rounded-full text-sm">Niv 4: Avec Centimes</button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="bg-white p-6 rounded-2xl shadow-lg border-4 border-blue-200">
+			<h2 class="text-xl font-bold mb-4 flex items-center">📦 Panier Client</h2>
+			<div id="items-list" class="flex gap-4 flex-wrap mb-6"></div>
+			<div class="text-lg flex items-center gap-3">
+				<span id="total-label" class="invisible">Total à payer : </span>
+				<span id="total-price" class="font-bold text-red-600 text-2xl invisible">?</span> €
+				<button id="help-btn" onclick="showHelp()" class="hidden bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded border border-purple-300 hover:bg-purple-200 transition">
+					Aide-moi à calculer le total à payer par le client💡
+				</button>
+			</div>
+			<div class="text-lg mb-4 text-gray-600 italic">L'acheteur a donné : <span id="given-amount" class="font-bold text-blue-600">0</span>€</div>
+			
+		</div>
+
+        <div class="bg-white-100 p-6 rounded-2xl border-4 border-dashed border-green-400 min-h-[200px]">
+            <h2 class="text-xl font-bold mb-4 text-green-800">💸 Monnaie à rendre</h2>
+            <div id="returned-money" class="flex flex-wrap gap-2 mb-4 min-h-[60px]"></div>
+            <div class="flex gap-2">
+                <button onclick="checkResult()" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition">Valider</button>
+                <button onclick="resetTurn()" class="bg-gray-400 text-white px-4 py-2 rounded-lg">Effacer</button>
+            </div>
+			<hr class="my-4">
+			<div class="text-xl font-bold text-green-600">Total de la monnaie que tu rends : <span id="amount-to-return">0</span>€</div>
+        </div>
+
+        <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-2xl">
+            <h2 class="text-black text-center mb-4 uppercase tracking-widest text-sm">Choisis les pièces et billets dans ta caisse.</h2>
+            <div class="flex flex-wrap justify-center gap-4" id="cash-drawer"></div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        let currentLevel = 1;
+        let totalPrice = 0;
+        let givenAmount = 0;
+        let userReturn = 0;
+        let itemsIcons = ['🍎', '🍦', '🧸', '🚗', '🍫', '📚', '👟', '🍕', '🍰'];
+
+        const cashValues = [
+            {v: 50, type: 'bill', img: '50e.jpg'},
+            {v: 20, type: 'bill', img: '20e.jpg'},
+            {v: 10, type: 'bill', img: '10e.jpg'},
+            {v: 5, type: 'bill', img: '5e.jpg'},
+            {v: 2, type: 'coin', img: '2e.jpg'},
+            {v: 1, type: 'coin', img: '1e.jpg'},
+            {v: 0.5, type: 'coin', img: '50c.jpg'},
+            {v: 0.2, type: 'coin', img: '20c.jpg'},
+            {v: 0.1, type: 'coin', img: '10c.jpg'},
+            {v: 0.05, type: 'coin', img: '5c.jpg'}
+        ];
+
+        function initDrawer() {
+            const drawer = document.getElementById('cash-drawer');
+            drawer.innerHTML = '';
+            cashValues.forEach(item => {
+                if (currentLevel < 4 && item.v < 1) return;
+                if (currentLevel < 3 && item.v > 20) return;
+
+                const btn = document.createElement('button');
+                btn.className = "money-btn transform hover:scale-110 transition";
+                btn.innerHTML = `<img src="images/${item.img}" alt="${item.v}" class="${item.type}">`;
+                btn.onclick = () => addToReturn(item.v, item.img, item.type);
+                drawer.appendChild(btn);
+            });
+        }
+
+        function setLevel(lvl) {
+            currentLevel = lvl;
+            newGame();
+            initDrawer();
+        }
+
+        function newGame() {
+			let nbItems = (currentLevel === 1) ? 1 : Math.floor(Math.random() * 2) + 2;
+			let maxTotal = (currentLevel <= 2) ? 20 : 100;
+			
+			totalPrice = 0;
+			const listContainer = document.getElementById('items-list');
+			listContainer.innerHTML = '';
+			
+			for(let i=0; i<nbItems; i++) {
+				let price = Math.floor(Math.random() * (maxTotal / nbItems)) + 1;
+				if (currentLevel === 4) {
+					price += (Math.floor(Math.random() * 19) + 1) * 0.05; 
+				}
+				totalPrice += price;
+
+				let displayPrice = (currentLevel === 4) ? price.toFixed(2) : price;
+
+				const itemBox = document.createElement('div');
+				itemBox.className = "flex flex-col items-center bg-gray-50 p-2 rounded-lg border";
+				itemBox.innerHTML = `
+					<span class="text-4xl">${itemsIcons[Math.floor(Math.random()*itemsIcons.length)]}</span>
+					<span class="text-sm font-bold mt-1">${displayPrice}€</span>
+				`;
+				listContainer.appendChild(itemBox);
+			}
+			
+			totalPrice = Math.round(totalPrice * 100) / 100;
+    
+				const totalSpan = document.getElementById('total-price');
+				const totalLabel = document.getElementById('total-label'); // On récupère le texte "Total à payer"
+				const helpBtn = document.getElementById('help-btn');
+
+				if (currentLevel === 1) {
+					// Niveau 1 : Tout est visible
+					totalSpan.innerText = totalPrice;
+					totalSpan.classList.remove('invisible');
+					totalLabel.classList.remove('invisible');
+					helpBtn.classList.add('hidden');
+				} else {
+					// Niveaux 2, 3, 4 : Tout est caché
+					totalSpan.innerText = "?";
+					totalSpan.classList.add('invisible');
+					totalLabel.classList.add('invisible');
+					helpBtn.classList.remove('hidden');
+				}
+			
+			// Calculer ce que donne l'acheteur (toujours plus que le prix)
+            const payments = [5, 10, 20, 50, 100, 200];
+            givenAmount = payments.find(p => p >= totalPrice) || totalPrice + 10;
+
+            document.getElementById('total-price').innerText = totalPrice;
+            document.getElementById('given-amount').innerText = givenAmount;
+            resetTurn();
+		}
+		
+		// Montrer la somme totale à payer par le client
+		function showHelp() {
+			const totalSpan = document.getElementById('total-price');
+			const totalLabel = document.getElementById('total-label');
+			const helpBtn = document.getElementById('help-btn');
+			
+			// On affiche le texte et le vrai prix
+			totalSpan.innerText = totalPrice;
+			totalSpan.classList.remove('invisible');
+			totalLabel.classList.remove('invisible');
+			
+			// On cache le bouton d'aide
+			helpBtn.classList.add('hidden');
+			
+			// Animation
+			totalSpan.classList.add('scale-125', 'transition-transform');
+			setTimeout(() => totalSpan.classList.remove('scale-125'), 300);
+		}
+		
+        function addToReturn(val, img, type) {
+            userReturn += val;
+            userReturn = Math.round(userReturn * 100) / 100;
+            const container = document.getElementById('returned-money');
+            container.innerHTML += `<img src="images/${img}" class="${type} inline-block m-1 shadow-sm">`;
+            document.getElementById('amount-to-return').innerText = userReturn;
+        }
+
+        function resetTurn() {
+            userReturn = 0;
+            document.getElementById('returned-money').innerHTML = '';
+            document.getElementById('amount-to-return').innerText = '0';
+        }
+
+        function checkResult() {
+			const expected = Math.round((givenAmount - totalPrice) * 100) / 100;
+			const overlay = document.getElementById('feedback-overlay');
+			const icon = document.getElementById('feedback-icon');
+			const text = document.getElementById('feedback-text');
+
+			overlay.style.display = 'flex';
+
+			if (userReturn === expected) {
+				// SUCCÈS
+				icon.innerText = "🎉";
+				text.innerHTML = `<span class="text-green-600">Bravo !</span><br>C'est le compte juste !`;
+				
+				// Explosion de confettis
+				confetti({
+					particleCount: 150,
+					spread: 70,
+					origin: { y: 0.6 },
+					colors: ['#22c55e', '#3b82f6', '#eab308']
+				});
+
+				// Nouvelle partie automatique après 2.5 secondes
+				setTimeout(() => {
+					overlay.style.display = 'none';
+					newGame();
+				}, 2500);
+
+			} else {
+				// ERREUR
+				icon.innerText = "❌";
+				text.innerHTML = `<span class="text-red-600">Recompte bien...</span>`;
+				
+				// On laisse l'utilisateur cliquer pour fermer et réessayer
+				setTimeout(() => {
+					overlay.onclick = () => {
+						overlay.style.display = 'none';
+						resetTurn();
+					};
+				}, 500);
+			}
+		}
+
+        window.onload = () => {
+            initDrawer();
+            newGame();
+        };
+    </script>
+</body>
+</html>

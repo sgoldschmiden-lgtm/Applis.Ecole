@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu du Passé Composé</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        body { 
+			font-family: 'Segoe UI', sans-serif; 
+			background: #f4f7f6; 
+			display: flex; 
+			flex-direction: column; 
+			align-items: center; 
+			padding: 20px; 
+			}
+        #game-container { 
+			background: white; 
+			padding: 20px; 
+			border-radius: 15px; 
+			box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+			width: 100%; 
+			max-width: 700px; 
+			text-align: center; 
+			}
+        .header { 
+			display: flex; 
+			justify-content: space-between; 
+			font-weight: bold; 
+			margin-bottom: 20px; 
+			font-size: 1.2rem; 
+			}
+        .consigne { 
+			font-size: 1rem; 
+			color: #666; 
+			margin-bottom: 15px; 
+			font-style: italic; 
+			}
+        .titre-verbe { 
+			font-size: 2.5rem; 
+			color: #2c3e50; 
+			margin: 10px 0; 
+			font-weight: bold; 
+			}
+        .phrase { 
+			font-size: 1.8rem; 
+			margin: 30px 0; 
+			font-weight: bold; 
+			color: #34495e; 
+			}
+        .column-title {
+			font-weight: bold;
+			font-size: 1.2rem;
+			margin-bottom: 10px;
+			color: #2c3e50;
+			}
+		.btn-tile { 
+			padding: 12px 20px; 
+			border: none; 
+			border-radius: 5px; 
+			cursor: pointer; 
+			background: #3498db; 
+			color: white; 
+			margin: 5px auto; 
+			font-size: 1rem; 
+			transition: 0.2s; 
+			width: 180px;
+			display: block;
+			}
+        .btn-tile:hover { 
+			background: #2980b9; 
+			}
+        .selected { 
+			background: #f39c12 !important; 
+			}
+        #step-info { 
+			font-weight: bold; 
+			color: #e67e22; 
+			margin-bottom: 10px; 
+			font-size: 1.2rem; 
+			}
+    </style>
+</head>
+<body>
+
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>  
+
+	<div id="game-container">
+		<div class="header">
+			<div>Conjuguer au passé composé</div>
+			<span>Question : <span id="num-q">1</span>/10</span>
+			<span>Score : <span id="score">0</span></span>
+		</div>
+		<div id="step-info">Étape 1 : Choisis l'auxiliaire</div>
+		<div class="consigne" id="consigne">Sélectionne la forme conjuguée qui convient au sujet.</div>
+		<div class="titre-verbe" id="infinitif">...</div>
+		<div class="phrase" id="display-phrase">Sujet ___ ___</div>
+		
+		<div id="bank"></div>
+	</div>
+
+<script>
+    const baseVerbes = {
+        "parler": { aux: "avoir", pp: ["parlé", "parlée", "parlés", "parlées"] },
+        "sauter": { aux: "avoir", pp: ["sauté", "sautée", "sautés", "sautées"] },
+        "chanter": { aux: "avoir", pp: ["chanté", "chantée", "chantés", "chantées"] },
+        "bouger": { aux: "avoir", pp: ["bougé", "bougée", "bougés", "bougées"] },
+        "pleurer": { aux: "avoir", pp: ["pleuré", "pleurée", "pleurés", "pleurées"] },
+        "compter": { aux: "avoir", pp: ["compté", "comptée", "comptés", "comptées"] },
+        "manger": { aux: "avoir", pp: ["mangé", "mangée", "mangés", "mangées"] },
+        "monter": { aux: "être", pp: ["monté", "montée", "montés", "montées"] },
+        "voler": { aux: "avoir", pp: ["volé", "volée", "volés", "volées"] },
+        "jouer": { aux: "avoir", pp: ["joué", "jouée", "joués", "jouées"] },
+        "prêter": { aux: "avoir", pp: ["prêté", "prêtée", "prêtés", "prêtées"] },
+        "donner": { aux: "avoir", pp: ["donné", "donnée", "donnés", "données"] },
+        "aimer": { aux: "avoir", pp: ["aimé", "aimée", "aimés", "aimées"] },
+        "cuisiner": { aux: "avoir", pp: ["cuisiné", "cuisinée", "cuisinés", "cuisinées"] },
+        "balancer": { aux: "avoir", pp: ["balancé", "balancée", "balancés", "balancées"] },
+        "ramper": { aux: "avoir", pp: ["rampé", "rampée", "rampés", "rampées"] },
+        "fumer": { aux: "avoir", pp: ["fumé", "fumée", "fumés", "fumées"] },
+        "semer": { aux: "avoir", pp: ["semé", "semée", "semés", "semées"] },
+        "finir": { aux: "avoir", pp: ["fini", "finie", "finis", "finies"] },
+        "grandir": { aux: "avoir", pp: ["grandi", "grandie", "grandis", "grandies"] },
+        "applaudir": { aux: "avoir", pp: ["applaudi", "applaudie", "applaudis", "applaudies"] },
+        "rire": { aux: "avoir", pp: ["ri", "rie", "ris", "ries"] },
+        "agir": { aux: "avoir", pp: ["agi", "agie", "agis", "agies"] },
+        "atterrir": { aux: "avoir", pp: ["atterri", "atterrie", "atterris", "atterries"] },
+        "bâtir": { aux: "avoir", pp: ["bâti", "bâtie", "bâtis", "bâties"] },
+        "lire": { aux: "avoir", pp: ["lu", "lue", "lus", "lues"] },
+        "maigrir": { aux: "avoir", pp: ["maigri", "maigrie", "maigris", "maigries"] },
+        "prendre": { aux: "avoir", pp: ["pris", "prise", "pris", "prises"] },
+        "vendre": { aux: "avoir", pp: ["vendu", "vendue", "vendus", "vendues"] },
+        "aller": { aux: "être", pp: ["allé", "allée", "allés", "allées"] },
+        "rugir": { aux: "avoir", pp: ["rugi", "rugie", "rugis", "rugies"] },
+        "rougir": { aux: "avoir", pp: ["rougi", "rougie", "rougis", "rougies"] },
+        "courir": { aux: "avoir", pp: ["couru", "courue", "courus", "courues"] },
+        "sortir": { aux: "être", pp: ["sorti", "sortie", "sortis", "sorties"] },
+        "partir": { aux: "être", pp: ["parti", "partie", "partis", "parties"] },
+        "venir": { aux: "être", pp: ["venu", "venue", "venus", "venues"] },
+        "arriver": { aux: "être", pp: ["arrivé", "arrivée", "arrivés", "arrivées"] },
+        "tomber": { aux: "être", pp: ["tombé", "tombée", "tombés", "tombées"] },
+        "devenir": { aux: "être", pp: ["devenu", "devenue", "devenus", "devenues"] },
+        "mourir": { aux: "être", pp: ["mort", "morte", "morts", "mortes"] },
+        "naître": { aux: "être", pp: ["né", "née", "nés", "nées"] },
+        "descendre": { aux: "être", pp: ["descendu", "descendue", "descendus", "descendues"] },
+        "entrer": { aux: "être", pp: ["entré", "entrée", "entrés", "entrées"] },
+        "rester": { aux: "être", pp: ["resté", "restée", "restés", "restées"] },
+        "passer": { aux: "être", pp: ["passé", "passée", "passés", "passées"] },
+        "retourner": { aux: "être", pp: ["retourné", "retournée", "retournés", "retournées"] }
+    };
+
+    const sujets = ["je", "tu", "il", "elle", "on", "Marie", "Lucas", "nous", "vous", "ils", "elles", "Paul et Eric", "Simon et Laetitia", "Christelle et Julie", "Marc et moi", "Jean et toi", "Les garçons", "Les filles"];
+    const verbesListe = Object.keys(baseVerbes);
+
+    let state = { currentIdx: 0, score: 0, etape: 1, currentSujet: "", currentVerbe: "", currentAux: "", selectedAux: "", selectedPP: "" };
+
+    function getConjugaisonAux(suj, type) {
+        const map = {
+            "être": { 
+				"je": "suis", 
+				"tu": "es", 
+				"il": "est", 
+				"elle": "est", 
+				"on": "est", 
+				"Marie": "est", 
+				"Lucas": "est", 
+				"nous": "sommes", 
+				"Marc et moi": "sommes", 
+				"vous": "êtes", 
+				"Jean et toi": "êtes", 
+				"ils": "sont", 
+				"elles": "sont", 
+				"Paul et Eric": "sont", 
+				"Simon et Laetitia": "sont",
+				"Christelle et Julie": "sont", 
+				"Les garçons": "sont", 
+				"Les filles": "sont" 
+				},
+            "avoir": { 
+				"je": "ai", 
+				"tu": "as", 
+				"il": "a", 
+				"elle": "a", 
+				"on": "a", 
+				"Marie": "a", 
+				"Lucas": "a", 
+				"nous": "avons", 
+				"Marc et moi": "avons", 
+				"vous": "avez", 
+				"Jean et toi": "avez", 
+				"ils": "ont", 
+				"elles": "ont", 
+				"Paul et Eric": "ont", 
+				"Simon et Laetitia": "ont",
+				"Christelle et Julie": "ont", 
+				"Les garçons": "ont", 
+				"Les filles": "ont" 
+				}
+        };
+        return map[type][suj];
+    }
+
+    function getBonPP(suj, verbe) {
+        const auxType = baseVerbes[verbe].aux;
+        if (auxType === "avoir") return baseVerbes[verbe].pp[0];
+        const mascS = ["il", "on", "Lucas"];
+		const femS = ["elle", "Marie"];
+        const mascP = ["ils", "Paul et Eric", "Les garçons", "Marc et moi", "Jean et toi", "Simon et Laetitia"];
+        const femP = ["elles", "Christelle et Julie", "Les filles"];
+        if (femP.includes(suj)) return baseVerbes[verbe].pp[3];
+        if (mascP.includes(suj)) return baseVerbes[verbe].pp[2];
+        if (femS.includes(suj)) return baseVerbes[verbe].pp[1];
+		if (mascS.includes(suj)) return baseVerbes[verbe].pp[0]
+    }
+
+    function initRound() {
+        if (state.currentIdx >= 10) {
+            document.getElementById('game-container').innerHTML = `<h1>Bravo !</h1><p style="font-size:2rem">Score final : ${state.score}/10</p><button onclick="location.reload()" class="btn-tile">Rejouer</button>`;
+            confetti({ particleCount: 500, spread: 180, origin: { y: 0.5 } });
+            return;
+        }
+        state.currentSujet = sujets[Math.floor(Math.random() * sujets.length)];
+        state.currentVerbe = verbesListe[Math.floor(Math.random() * verbesListe.length)];
+        state.currentAux = getConjugaisonAux(state.currentSujet, baseVerbes[state.currentVerbe].aux);
+        state.etape = 1;
+        state.selectedAux = ""; state.selectedPP = "";
+        
+        document.getElementById('num-q').innerText = state.currentIdx + 1;
+        document.getElementById('infinitif').innerText = state.currentVerbe;
+        document.getElementById('display-phrase').innerText = `${state.currentSujet} ___ ___`;
+        renderBank();
+    }
+
+	function renderBank() {
+        const bank = document.getElementById('bank');
+        bank.innerHTML = "";
+        
+        if (state.etape === 1) {
+            document.getElementById('step-info').innerText = "Étape 1 : Choisis l'auxiliaire";
+            
+            const div = document.createElement('div');
+            div.style.display = "flex"; 
+            div.style.justifyContent = "center"; 
+            div.style.gap = "40px";
+
+            const etre = ["suis", "es", "est", "sommes", "êtes", "sont"];
+            const avoir = ["ai", "as", "a", "avons", "avez", "ont"];
+
+            // Création colonne Être
+            const colEtre = document.createElement('div');
+            colEtre.innerHTML = `<div class="column-title">Être</div>`;
+            etre.forEach(w => {
+                colEtre.innerHTML += `<button class="btn-tile" onclick="validateAux('${w}')">${w}</button>`;
+            });
+
+            // Création colonne Avoir
+            const colAvoir = document.createElement('div');
+            colAvoir.innerHTML = `<div class="column-title">Avoir</div>`;
+            avoir.forEach(w => {
+                colAvoir.innerHTML += `<button class="btn-tile" onclick="validateAux('${w}')">${w}</button>`;
+            });
+
+            div.appendChild(colEtre);
+            div.appendChild(colAvoir);
+            bank.appendChild(div);
+            
+        } else {
+            // Étape 2 : Participe passé
+            document.getElementById('step-info').innerText = "Étape 2 : Choisis le participe passé";
+            const container = document.createElement('div');
+            baseVerbes[state.currentVerbe].pp.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = "btn-tile";
+                btn.style.width = "auto"; // On laisse auto pour le PP
+                btn.innerText = p;
+                btn.onclick = () => validatePP(p);
+                container.appendChild(btn);
+            });
+            bank.appendChild(container);
+        }
+    }
+
+    function validateAux(val) {
+        if (val === state.currentAux) {
+            state.selectedAux = val;
+            state.etape = 2;
+            document.getElementById('display-phrase').innerText = `${state.currentSujet} ${val} ___`;
+            renderBank();
+        } else {
+            alert(`Attention ! Avec le sujet "${state.currentSujet}", l'auxiliaire est "${state.currentAux}".`);
+        }
+    }
+
+    function validatePP(val) {
+        if (val === getBonPP(state.currentSujet, state.currentVerbe)) {
+            // Bonne réponse : on met à jour le score et on affiche le résultat
+            state.score++;
+            document.getElementById('score').innerText = state.score;
+            document.getElementById('display-phrase').innerText = `${state.currentSujet} ${state.selectedAux} ${val}`;
+            
+            // Effet visuel
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            
+            // Désactiver les boutons pour empêcher de cliquer pendant la pause
+            document.querySelectorAll('.btn-tile').forEach(btn => btn.disabled = true);
+
+            // Temporisation de 2000ms (2 secondes) avant la suite
+            setTimeout(() => {
+                state.currentIdx++;
+                initRound();
+            }, 2000);
+            
+        } else {
+            alert("Attention à l'accord du participe passé avec le sujet !");
+        }
+    }
+
+    initRound();
+</script>
+</body>
+</html>

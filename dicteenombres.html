@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dictée de Nombres Interactive</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f39c12;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --bg: #f4f7f6;
+            --dark: #2c3e50;
+            --key-bg: #e0e0e0;
+            --key-active: #d0d0d0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            overscroll-behavior: contain;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 1.5rem; font-size: 1.8rem; }
+        
+        .menu, .game-area, .result-area { display: none; }
+        .active { display: block; }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 5px;
+            font-weight: 600;
+            touch-action: manipulation;
+        }
+
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 2px solid #ddd; color: #666; }
+        .btn-level { background: var(--secondary); color: white; width: 100%; margin: 8px 0; font-size: 1.1rem; }
+        
+        #number-in-letters {
+            font-size: 1.4rem;
+            color: var(--dark);
+            margin: 15px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 5px solid var(--primary);
+            border-radius: 4px;
+            font-style: italic;
+            min-height: 1.4em;
+        }
+
+        /* QCM */
+        .options-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;
+        }
+
+        .qcm-choice {
+            background: white; border: 2px solid #eee; padding: 15px; border-radius: 10px; font-size: 1.3rem; color: var(--dark);
+        }
+        .qcm-choice.selected { border-color: var(--secondary); background: #fffdf9; box-shadow: 0 0 10px rgba(243, 156, 18, 0.2); }
+
+        /* Saisie et Clavier Virtuel */
+        input[type="text"] {
+            width: 90%; padding: 15px; font-size: 1.8rem; border: 2px solid #ddd; border-radius: 8px; text-align: center; margin-bottom: 15px; color: var(--dark);
+            /* Empêcher le clavier système d'apparaître sur mobile quand on clique dessus */
+            inputmode: none; 
+        }
+
+        .virtual-keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto 20px auto;
+        }
+
+        .key {
+            background-color: var(--key-bg);
+            color: var(--dark);
+            font-size: 1.8rem;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color 0.1s;
+        }
+
+        .key:active {
+            background-color: var(--key-active);
+        }
+
+        .key-clear {
+            grid-column: span 3;
+            background-color: #e74c3c20;
+            color: var(--error);
+            font-size: 1.1rem;
+            padding: 10px;
+        }
+        .key-clear:active { background-color: #e74c3c40; }
+
+        /* Feedback et navigation */
+        .feedback { margin: 15px 0; font-size: 1.2rem; font-weight: bold; min-height: 1.5em; }
+        .score-box { font-size: 1rem; margin-bottom: 15px; color: #7f8c8d; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        
+        .hidden { display: none !important; }
+        .nav-controls { margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+
+	<div class="container">
+		<div id="menu" class="menu active">
+			<h1>🔢 Dictée de Nombres</h1>
+			<p>Choisis ton niveau :</p>
+			<button class="btn btn-level" onclick="startGame(1)">Niv. 1 : 0 à 69 (QCM)</button>
+			<button class="btn btn-level" onclick="startGame(2)">Niv. 2 : 0 à 999 (QCM)</button>
+			<button class="btn btn-level" onclick="startGame(3)">Niv. 3 : 0 à 999 (Clavier)</button>
+			<button class="btn btn-level" onclick="startGame(4)">Niv. 4 : Jusqu'au Milliard (Clavier)</button>
+		</div>
+
+		<div id="game-area" class="game-area">
+			<div class="score-box">
+				<span>Question : <b id="q-count">1</b>/10</span>
+				<span>Score : <b id="current-score">0</b>/10</span>
+			</div>
+			
+			<p>Écris ce nombre en chiffres :</p>
+			<div id="number-in-letters"></div>
+			
+			<button class="btn btn-primary" onclick="speakNumber()">🔊 Écouter</button>
+
+			<div id="qcm-area" class="options-grid hidden"></div>
+
+			<div id="input-area" class="hidden">
+				<input type="text" id="user-input" placeholder="..." readonly>
+				
+				<div id="virtual-keyboard" class="virtual-keyboard">
+					<button class="key" onclick="pressKey('1')">1</button>
+					<button class="key" onclick="pressKey('2')">2</button>
+					<button class="key" onclick="pressKey('3')">3</button>
+					<button class="key" onclick="pressKey('4')">4</button>
+					<button class="key" onclick="pressKey('5')">5</button>
+					<button class="key" onclick="pressKey('6')">6</button>
+					<button class="key" onclick="pressKey('7')">7</button>
+					<button class="key" onclick="pressKey('8')">8</button>
+					<button class="key" onclick="pressKey('9')">9</button>
+					<button class="key" style="grid-column: 2;" onclick="pressKey('0')">0</button>
+					<button class="key key-clear" onclick="pressKey('clear')">Effacer tout</button>
+				</div>
+			</div>
+
+			<div id="feedback" class="feedback"></div>
+
+			<button id="btn-validate" class="btn btn-success" onclick="checkAnswer()">Valider</button>
+			<button id="btn-next" class="btn btn-primary hidden" onclick="nextQuestion()">Suivant ➔</button>
+
+			<div class="nav-controls">
+				<button class="btn btn-outline btn-sm" onclick="goToMenu()">↩ Retour au menu</button>
+			</div>
+		</div>
+
+		<div id="result-area" class="result-area">
+			<h1>Résultats</h1>
+			<div id="final-score" style="font-size: 5rem; color: var(--primary); margin: 20px 0;"></div>
+			<p id="final-comment"></p>
+			<button class="btn btn-primary" onclick="goToMenu()">Rejouer</button>
+		</div>
+	</div>
+
+<script>
+    let currentLevel = 1, score = 0, questionNumber = 1, targetNumber = 0, selectedChoice = null;
+    const userInput = document.getElementById('user-input');
+
+    // --- LOGIQUE DE CONVERSION NOMBRE -> LETTRES (Réforme de 1990) ---
+    function numberToLetters(n) {
+        if (n === 0) return "zéro";
+        const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+        const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+        const tens = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante", "quatre-vingt", "quatre-vingt"];
+
+        function convert(num) {
+            if (num < 10) return units[num];
+            if (num < 20) return teens[num - 10];
+            if (num < 70) {
+                let t = Math.floor(num / 10), u = num % 10;
+                if (u === 0) return tens[t];
+                if (u === 1) return tens[t] + "-et-un";
+                return tens[t] + "-" + units[u];
+            }
+            if (num < 80) return "soixante-" + convert(num - 60);
+            if (num < 100) {
+                let u = num % 20;
+                if (num < 91 && u === 0) return "quatre-vingts";
+                return "quatre-vingt-" + convert(num - 80);
+            }
+            if (num < 1000) {
+                let c = Math.floor(num / 100), r = num % 100;
+                let part = (c === 1) ? "cent" : units[c] + "-cent";
+                if (r === 0) return (c > 1) ? part + "s" : part;
+                return part + "-" + convert(r);
+            }
+            if (num < 1000000) {
+                let m = Math.floor(num / 1000), r = num % 1000;
+                let part = (m === 1) ? "mille" : convert(m) + "-mille";
+                return (r === 0) ? part : part + "-" + convert(r);
+            }
+            if (num < 1000000000) {
+                let mi = Math.floor(num / 1000000), r = num % 1000000;
+                let part = (mi === 1) ? "un million" : convert(mi) + " millions";
+                return (r === 0) ? part : part + " " + convert(r);
+            }
+            let bi = Math.floor(num / 1000000000), r = num % 1000000000;
+            let part = (bi === 1) ? "un milliard" : convert(bi) + " milliards";
+            return (r === 0) ? part : part + " " + convert(r);
+        }
+        return convert(n).replace(/-+/g, '-').replace(/- /g, ' ').trim();
+    }
+
+    // --- LOGIQUE DU JEU ---
+    function startGame(level) {
+        currentLevel = level; score = 0; questionNumber = 1;
+        document.getElementById('menu').classList.remove('active');
+        document.getElementById('game-area').classList.add('active');
+        generateQuestion();
+    }
+
+    function generateQuestion() {
+        selectedChoice = null;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-validate').classList.remove('hidden');
+        userInput.value = ""; // Effacer la saisie précédente
+        document.getElementById('q-count').innerText = questionNumber;
+        document.getElementById('current-score').innerText = score;
+
+        let max = (currentLevel === 1) ? 69 : (currentLevel <= 3 ? 999 : 999999999999);
+        targetNumber = Math.floor(Math.random() * (max + 1));
+        
+        // Affichage en lettres
+        document.getElementById('number-in-letters').innerText = numberToLetters(targetNumber);
+
+        if (currentLevel <= 2) {
+            document.getElementById('qcm-area').classList.remove('hidden');
+            document.getElementById('input-area').classList.add('hidden');
+            setupQCM(max);
+        } else {
+            document.getElementById('qcm-area').classList.add('hidden');
+            document.getElementById('input-area').classList.remove('hidden');
+        }
+    }
+
+    function setupQCM(max) {
+        const area = document.getElementById('qcm-area');
+        area.innerHTML = "";
+        let choices = [targetNumber];
+        while(choices.length < 4) {
+            let offset = Math.floor(Math.random() * 20) - 10;
+            let rand = Math.abs(targetNumber + offset);
+            if(!choices.includes(rand)) choices.push(rand);
+        }
+        choices.sort(() => Math.random() - 0.5);
+
+        choices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = "btn qcm-choice";
+            btn.innerText = c.toLocaleString('fr-FR');
+            btn.onclick = () => {
+                document.querySelectorAll('.qcm-choice').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedChoice = c;
+            };
+            area.appendChild(btn);
+        });
+    }
+
+    function speakNumber() {
+        // Annuler toute lecture en cours
+        window.speechSynthesis.cancel();
+        
+        // On récupère le texte en lettres déjà affiché dans l'interface
+        const textToSpeak = document.getElementById('number-in-letters').innerText;
+        
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.9; // Vitesse légèrement réduite pour une meilleure compréhension
+        window.speechSynthesis.speak(utterance);
+    }
+	
+    // --- LOGIQUE CLAVIER VIRTUEL ---
+    function pressKey(key) {
+        // Ne rien faire si la question est déjà validée
+        if (!document.getElementById('btn-next').classList.contains('hidden')) return;
+
+        if (key === 'clear') {
+            userInput.value = "";
+        } else {
+            // Empêcher de commencer par plusieurs zéros si le champ est vide
+            if (userInput.value === "" && key === '0' && targetNumber !== 0) return;
+            // Limiter la longueur de saisie pour le niveau 4 (milliards = 12 chiffres)
+            if (userInput.value.length >= 12) return;
+            
+            userInput.value += key;
+        }
+    }
+
+    function checkAnswer() {
+        let userAns;
+        if (currentLevel <= 2) {
+            userAns = selectedChoice;
+            if (userAns === null) return alert("Choisis une réponse !");
+        } else {
+            if (userInput.value === "") return alert("Saisis un nombre !");
+            userAns = parseInt(userInput.value);
+        }
+
+        const feedback = document.getElementById('feedback');
+        // Masquer le clavier pour afficher le feedback et le bouton suivant
+        if (currentLevel > 2) document.getElementById('virtual-keyboard').classList.add('hidden');
+
+        if (userAns === targetNumber) {
+            feedback.innerText = "Excellent ! C'est juste. ✅";
+            feedback.style.color = "var(--success)";
+            score++;
+        } else {
+            feedback.innerText = `Erreur. La réponse était ${targetNumber.toLocaleString('fr-FR')}. ❌`;
+            feedback.style.color = "var(--error)";
+        }
+
+        document.getElementById('btn-validate').classList.add('hidden');
+        document.getElementById('btn-next').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+        if (questionNumber < 10) {
+            questionNumber++;
+            // Réafficher le clavier pour la nouvelle question
+            if (currentLevel > 2) document.getElementById('virtual-keyboard').classList.remove('hidden');
+            generateQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        document.getElementById('game-area').classList.remove('active');
+        document.getElementById('result-area').classList.add('active');
+        document.getElementById('final-score').innerText = score + "/10";
+        document.getElementById('final-comment').innerText = score > 7 ? "Bravo, tu es un champion !" : "Continue de t'entraîner !";
+        
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    }
+
+    function goToMenu() {
+        // Annuler la synthèse vocale si on quitte
+        window.speechSynthesis.cancel();
+        document.getElementById('game-area').classList.remove('active');
+        document.getElementById('result-area').classList.remove('active');
+        document.getElementById('menu').classList.add('active');
+    }
+</script>
+
+</body>
+</html>

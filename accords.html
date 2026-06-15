@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Accordeur d'Adjectifs</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root { 
+		--primary: #4A90E2; 
+		--success: #48BB78; 
+		--error: #F56565; 
+		--bg: #F0F4F8; 
+		}
+        body { 
+		font-family: 'Segoe UI', Arial, sans-serif; 
+		background-color: var(--bg); 
+		display: flex; 
+		justify-content: center; 
+		align-items: center; 
+		min-height: 100vh; 
+		margin: 0; 
+		}
+        #app-container { 
+		background: white; 
+		padding: 2rem; 
+		border-radius: 20px; 
+		box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+		width: 90%; 
+		max-width: 600px; 
+		text-align: center; 
+		}
+        .hidden { 
+		display: none; 
+		}
+        button { 
+		background-color: var(--primary); 
+		color: white; 
+		border: none; 
+		padding: 15px 25px; 
+		margin: 10px; 
+		border-radius: 12px; 
+		font-size: 1.1rem; 
+		font-weight: bold; 
+		cursor: pointer; 
+		transition: 0.2s; 
+		}
+        button:hover { 
+		opacity: 0.9; 
+		transform: translateY(-2px); 
+		}
+        .option-btn { 
+		background-color: white; 
+		color: #333; 
+		border: 3px solid var(--primary); 
+		width: 100%; 
+		max-width: 300px; 
+		margin: 10px auto; 
+		display: block; 
+		}
+        .score-board { 
+		font-size: 1.2rem; 
+		margin-bottom: 20px; 
+		color: #4A5568; 
+		font-weight: bold; 
+		}
+        .sentence { 
+		font-size: 1.6rem; 
+		margin: 30px 0; 
+		min-height: 60px; 
+		}
+        .blank { 
+		color: var(--primary); 
+		border-bottom: 3px solid var(--primary); 
+		padding: 0 10px; 
+		}
+        .feedback { 
+		font-size: 1.3rem; 
+		font-weight: bold; 
+		margin: 20px 0; 
+		min-height: 30px; 
+		}
+        .final-score { 
+		font-size: 5rem; 
+		color: var(--primary); 
+		font-weight: 800; 
+		margin: 20px 0; 
+		}
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+	<div id="app-container">
+		<div id="menu">
+			<h1>L'Accordeur d'Adjectifs</h1>
+			<p>Choisis ton mode de travail :</p>
+			<button onclick="startGame('genre')">Accord en Genre (m/f)</button><br>
+			<button onclick="startGame('nombre')">Accord en Nombre (s/p)</button><br>
+			<button onclick="startGame('les-deux')">Genre et Nombre (les 4 formes)</button>
+		</div>
+
+		<div id="game" class="hidden">
+			<div class="score-board">Question <span id="current-q">1</span>/10 | Score : <span id="score">0</span></div>
+			<div class="sentence" id="sentence-display"></div>
+			<div id="options-container"></div>
+			<div id="feedback" class="feedback"></div>
+			<button id="next-btn" class="hidden" onclick="nextQuestion()" style="background-color: var(--success);">Question suivante ➔</button>
+			<div style="margin-top: 20px;">
+				<button onclick="showMenu()" style="background: #A0AEC0; font-size: 0.8rem;">Retour au menu</button>
+			</div>
+		</div>
+
+		<div id="result" class="hidden">
+			<h2>Résultat Final</h2>
+			<div class="final-score" id="total-score"></div>
+			<button onclick="showMenu()">Recommencer</button>
+		</div>
+	</div>
+
+<script>
+    // Liste d'adjectifs sémantiquement polyvalents (peuvent s'appliquer à des gens, animaux ou objets)
+    // Format: [MS, FS, MP, FP]
+    const adjectifs = [
+        ["petit", "petite", "petits", "petites"], ["grand", "grande", "grands", "grandes"],
+        ["joli", "jolie", "jolis", "jolies"], ["mauvais", "mauvaise", "mauvais", "mauvaises"],
+        ["vert", "verte", "verts", "vertes"], ["bleu", "bleue", "bleus", "bleues"],
+        ["noir", "noire", "noirs", "noires"], ["gris", "grise", "gris", "grises"],
+        ["blond", "blonde", "blonds", "blondes"], ["fort", "forte", "forts", "fortes"],
+        ["lourd", "lourde", "lourds", "lourdes"], ["froid", "froide", "froids", "froides"],
+        ["chaud", "chaude", "chauds", "chaudes"], ["épais", "épaisse", "épais", "épaisses"],
+        ["bas", "basse", "bas", "basses"], ["gros", "grosse", "gros", "grosses"],
+        ["neuf", "neuve", "neufs", "neuves"], ["vif", "vive", "vifs", "vives"],
+        ["blanc", "blanche", "blancs", "blanches"], ["frais", "fraîche", "frais", "fraîches"],
+        ["sec", "sèche", "secs", "sèches"], ["long", "longue", "longs", "longues"],
+        ["léger", "légère", "légers", "légères"], ["parfait", "parfaite", "parfaits", "parfaites"],
+        ["étroit", "étroite", "étroits", "étroites"], ["court", "courte", "courts", "courtes"],
+        ["clair", "claire", "clairs", "claires"], ["original", "originale", "originaux", "originales"],
+        ["pareil", "pareille", "pareils", "pareilles"], ["beau", "belle", "beaux", "belles"],
+        ["nouveau", "nouvelle", "nouveaux", "nouvelles"], ["vieux", "vieille", "vieux", "vieilles"],
+        ["violet", "violette", "violets", "violettes"], ["brillant", "brillante", "brillants", "brillantes"],
+        ["étonnant", "étonnante", "étonnants", "étonnantes"], ["amusant", "amusante", "amusants", "amusantes"],
+        ["surpris", "surprise", "surpris", "surprises"], ["divin", "divine", "divins", "divines"],
+        ["fin", "fine", "fins", "fines"], ["certain", "certaine", "certains", "certaines"],
+        ["brun", "brune", "bruns", "brunes"], ["pointu", "pointue", "pointus", "pointues"]
+        // J'ai réduit à 42 adjectifs universels pour garantir la cohérence sémantique 
+        // tout en gardant une grande variété de finales orthographiques.
+    ];
+
+    const sujets = [
+        { t: "Le chat est ", g: 0, n: 0 }, { t: "La voiture est ", g: 1, n: 0 },
+        { t: "Les garçons sont ", g: 0, n: 1 }, { t: "Les filles sont ", g: 1, n: 1 },
+        { t: "Le vélo est ", g: 0, n: 0 }, { t: "La fleur est ", g: 1, n: 0 },
+        { t: "Les arbres sont ", g: 0, n: 1 }, { t: "Les pommes sont ", g: 1, n: 1 },
+        { t: "Mon ami est ", g: 0, n: 0 }, { t: "Mon amie est ", g: 1, n: 0 },
+        { t: "Ces crayons sont ", g: 0, n: 1 }, { t: "Ces boîtes sont ", g: 1, n: 1 }
+    ];
+
+    let currentMode = '', qIdx = 0, score = 0, correct = "";
+
+    function startGame(mode) {
+        currentMode = mode; qIdx = 0; score = 0;
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('result').classList.add('hidden');
+        document.getElementById('game').classList.remove('hidden');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('next-btn').classList.add('hidden');
+        document.getElementById('current-q').innerText = qIdx + 1;
+        document.getElementById('score').innerText = score;
+
+        const adj = adjectifs[Math.floor(Math.random() * adjectifs.length)];
+        const suj = sujets[Math.floor(Math.random() * sujets.length)];
+
+        let target = (suj.g === 0) ? (suj.n === 0 ? 0 : 2) : (suj.n === 0 ? 1 : 3);
+        correct = adj[target];
+
+        document.getElementById('sentence-display').innerHTML = suj.t + '<span class="blank">...</span>';
+
+        let opts = [];
+        if (currentMode === 'genre') {
+            opts = (suj.n === 0) ? [adj[0], adj[1]] : [adj[2], adj[3]];
+        } else if (currentMode === 'nombre') {
+            opts = (suj.g === 0) ? [adj[0], adj[2]] : [adj[1], adj[3]];
+        } else {
+            opts = [adj[0], adj[1], adj[2], adj[3]];
+        }
+        
+        displayOptions([...new Set(opts)]);
+    }
+
+    function displayOptions(opts) {
+        const container = document.getElementById('options-container');
+        container.innerHTML = "";
+        opts.sort(() => Math.random() - 0.5).forEach(o => {
+            const b = document.createElement('button');
+            b.className = "option-btn";
+            b.innerText = o;
+            b.onclick = () => {
+                document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
+                if (o === correct) {
+                    score++;
+                    document.getElementById('feedback').innerText = "✅ Bravo !";
+                    document.getElementById('feedback').style.color = "var(--success)";
+                } else {
+                    document.getElementById('feedback').innerText = "❌ Erreur. La réponse est : " + correct;
+                    document.getElementById('feedback').style.color = "var(--error)";
+                }
+                document.getElementById('next-btn').classList.remove('hidden');
+            };
+            container.appendChild(b);
+        });
+    }
+
+    function nextQuestion() {
+        qIdx++;
+        if (qIdx < 10) loadQuestion();
+        else {
+            document.getElementById('game').classList.add('hidden');
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('total-score').innerText = score + "/10";
+            confetti({ particleCount: 200, spread: 80, origin: { y: 0.7 } });
+        }
+    }
+
+    function showMenu() {
+        document.getElementById('game').classList.add('hidden');
+        document.getElementById('result').classList.add('hidden');
+        document.getElementById('menu').classList.remove('hidden');
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu du Pendu - Spécial ULIS</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --light: #ecf0f1;
+            
+            /* Couleurs gaies pour les catégories */
+            --cls-ecole: #FF6B6B;      /* Rouge pastel */
+            --cls-famille: #FF9F43;    /* Orange */
+            --cls-maison: #4BC0C0;     /* Turquoise */
+            --cls-nature: #2ECC71;     /* Vert */
+            --cls-animaux: #9B59B6;    /* Violet */
+            --cls-metiers: #3498DB;    /* Bleu */
+            --cls-potter: #F1C40F;     /* Jaune */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 10px; }
+
+        /* Écrans */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .active { display: block; }
+
+        /* --- MODIFICATION ICI : Grille de Catégories plus gaie --- */
+        .grid-categories {
+            display: grid;
+            grid-template-columns: 1fr; /* Une seule colonne par défaut pour les gros boutons */
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        @media (min-width: 400px) {
+            .grid-categories {
+                grid-template-columns: 1fr 1fr; /* Deux colonnes si l'écran est assez large */
+            }
+        }
+
+        /* Style de base des boutons (inchangé mais appliqué aux catégories) */
+        button {
+            padding: 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary); /* Par défaut */
+            color: white;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        /* Style spécifique pour les boutons de CATEGORIE */
+        .btn-category {
+            display: flex;
+            flex-direction: column; /* Emoji au-dessus du texte */
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* Pour la lisibilité */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-category:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        /* L'emoji à l'intérieur du bouton */
+        .cat-icon {
+            font-size: 3rem; /* Gros emoji */
+            margin-bottom: 10px;
+        }
+
+        /* Couleurs spécifiques appliquées dynamiquement */
+        .cls-ecole { background-color: var(--cls-ecole); }
+        .cls-famille { background-color: var(--cls-famille); }
+        .cls-maison { background-color: var(--cls-maison); }
+        .cls-nature { background-color: var(--cls-nature); }
+        .cls-animaux { background-color: var(--cls-animaux); }
+        .cls-metiers { background-color: var(--cls-metiers); }
+        .cls-potter { background-color: var(--cls-potter); color: #333; text-shadow: none; } /* Jaune sur fond sombre */
+        
+        /* ----------------------------------------------------------- */
+
+        /* Zone de Jeu */
+        #word-display {
+            font-size: 2.5rem;
+            letter-spacing: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        #hangman-canvas {
+            background: #fff;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .wrong-letters {
+            color: var(--accent);
+            font-size: 1.2rem;
+            height: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        /* Clavier */
+        .keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .key {
+            width: 40px;
+            height: 45px;
+            font-weight: bold;
+        }
+
+        .key.used { background: #bdc3c7; cursor: not-allowed; }
+
+        /* Overlays (Croix, Mort, Gagné) */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .modal-msg {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .skull { font-size: 6rem; }
+        
+        .nav-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-nav { background: #7f8c8d; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>    
+    <div id="selection-screen" class="screen active">
+        <h1>Le Pendu</h1>
+        <p>Choisis ta catégorie préférée :</p>
+        <div class="grid-categories" id="categories-btns"></div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="category-title" style="font-weight: bold; color: var(--accent); font-size: 1.2rem;"></div>
+        <canvas id="hangman-canvas" width="200" height="200"></canvas>
+        <div class="wrong-letters" id="wrong-letters-display"></div>
+        <div id="word-display"></div>
+        <div class="keyboard" id="keyboard"></div>
+        
+        <div class="nav-buttons">
+            <button class="btn-nav" onclick="initGame()">Nouveau mot</button>
+            <button class="btn-nav" onclick="showSelection()">Retour aux catégories</button>
+        </div>
+    </div>
+
+    <div id="end-screen" class="screen">
+        <div id="end-visual"></div>
+        <div id="end-message" class="modal-msg"></div>
+        <p id="reveal-word"></p>
+        <button onclick="showSelection()">Rejouer</button>
+    </div>
+
+    <div id="overlay">❌</div>
+
+    <script>
+        const categories = {
+            "école": ["CRAYON", "CAHIER", "BUREAU", "TABLEAU", "RECREATION", "MAITRESSE", "CARTABLE", "LECTURE", "CLASSE", "ELEVE", "CISEAUX", "COLLE", "GOMME", "LIVRE", "DESSIN", "FEUTRE", "REGLE", "CALCUL", "DICTEE", "HISTOIRE", "SPORT", "CANTINE", "PRENOM", "ALPHABET", "MOT", "PHRASE", "ECRITURE", "PAPIER", "CLAVIER", "SOURIS", "PEINTURE", "POESIE", "CHANSON", "COMPAS", "AGENDA", "STYLO", "FEUILLE", "TAILLE-CRAYON", "TROUSSE", "ARMOIRE", "BANC", "COUR", "CRAIE", "DISCIPLINE", "EXERCICE", "LECON", "MANUEL", "NOTES", "RANG", "SILENCE"],
+            "famille": ["MAMAN", "PAPA", "FRERE", "SOEUR", "GRAND-PERE", "GRAND-MERE", "COUSIN", "COUSINE", "ONCLE", "TANTE", "PARENTS", "ENFANTS", "BEBE", "FAMILLE", "NEVEU", "NIECE", "FILLE", "FILS", "MARIAGE", "FRATRIE", "NAISSANCE", "JUMEAUX", "ANCETRES", "MAISON", "AMOUR", "CADEAU", "FETE", "ANNIVERSAIRE", "REUNION", "PHOTO", "SOUVENIR", "VIVRE", "PARTAGE", "AIEUL", "DESCENDANCE", "FOYER", "LINEAGE", "MADAME", "MONSIEUR", "PETIT-FILS", "PETITE-FILLE", "PROTECTION", "RACINES", "SOUTIEN", "TENDRESSE", "UNION", "VISITE", "VOISIN", "EDUQUER", "GRANDIR"],
+            "maison": ["CHAMBRE", "CUISINE", "SALON", "DOUCHE", "FENETRE", "PORTE", "TOIT", "JARDIN", "GARAGE", "ESCALIER", "TABLE", "CHAISE", "LIT", "ARMOIRE", "CANAPE", "TELEVISION", "FRIGO", "FOUR", "LAVABO", "MIROIR", "TAPIS", "RIDEAU", "LAMPE", "BALCON", "CAVE", "GRENIER", "COULOIR", "ENTREE", "PLAFOND", "MUR", "SOL", "VOLET", "CLEF", "SERRURE", "CHEMINEE", "RADIATEUR", "OREILLER", "COUETTE", "SERVIETTE", "ASSIETTE", "VERRE", "FOURCHETTE", "COUTEAU", "CUILLERE", "POÊLE", "CASSEROLE", "BOUTEILLE", "REVEIL", "PENDULE", "CADRE"],
+            "nature": ["ARBRE", "FLEUR", "FORET", "RIVIERE", "MONTAGNE", "SOLEIL", "LUNE", "ETOILE", "NUAGE", "PLUIE", "NEIGE", "VENT", "HERBE", "FEUILLE", "PLAGE", "MER", "OCEAN", "DESERT", "VOLCAN", "ORAGE", "ECLAIR", "ARC-EN-CIEL", "TERRE", "PIERRE", "SABLE", "CAILLOU", "MOUSSE", "RACINE", "BRANCHE", "BUISSON", "CHAMP", "PRAIRIE", "VALLEE", "CASCADE", "LAC", "ETANG", "SOURCE", "CHEMIN", "SENTIER", "HORIZON", "CAMPAGNE", "SAUVAGE", "ENVIRONNEMENT", "AIR", "CLIMAT", "SAISON", "PRINTEMPS", "ETE", "AUTOMNE", "HIVER"],
+            "animaux": ["CHIEN", "CHAT", "CHEVAL", "VACHE", "COCHON", "POULE", "LAPIN", "MOUTON", "CHEVRE", "LION", "TIGRE", "ELEPHANT", "GIRAFE", "ZEBRE", "SINGE", "OURS", "LOUP", "RENARD", "OISEAU", "POISSON", "BALEINE", "DAUPHIN", "REQUIN", "SERPENT", "TORTUE", "GRENOUILLE", "ABEILLE", "PAPILLON", "ARAIGNEE", "FOURMI", "CROCODILE", "CANGOUROU", "PANDA", "PINGOUIN", "CANARD", "SOURIS", "RAT", "HAMSTER", "PERROQUET", "AIGLE", "HIBOU", "CORBEAU", "CERF", "ECUREUIL", "HERISSON", "KUALA", "AUTRUCHE", "CHAMEAU", "DROMADAIRE", "RHINOCEROS"],
+            "métiers": ["MAITRE", "DOCTEUR", "POLICIER", "POMPIER", "BOULANGER", "BOUCHER", "CUISINIER", "INFIRMIER", "DENTISTE", "VENDEUR", "COIFFEUR", "FACTEUR", "CHAUFFEUR", "PILOTE", "MARIN", "SOLDAT", "ARTISTE", "MUSICIEN", "CHANTEUR", "DESSINATEUR", "ECRIVAIN", "JOURNALISTE", "AVOCAT", "JUGE", "ARCHITECTE", "INGENIEUR", "MECANICIEN", "ELECTRICIEN", "PLOMBIER", "MACON", "MENUISIER", "JARDINIER", "AGRICULTEUR", "FERMIER", "PECHEUR", "PHOTOGRAPHE", "VETERINAIRE", "PHARMACIEN", "BIBLIOTHECAIRE", "INFORMATICIEN", "BOULANGERE", "COIFFEUSE", "INFERMIERE", "DENTISTE", "ASTRONAUTE", "SOUDEUR", "COUTURIER", "FLEURISTE", "CAISSIER", "BANQUIER"],
+            "Harry Potter": ["HARRY", "RON", "HERMIONE", "DUMBLEDORE", "VOLDEMORT", "ROGUE", "HAGRID", "BAGUETTE", "BALAI", "CHATEAU", "SORTILEGE", "MAGIE", "SORCIER", "HIBOU", "CICATRICE", "LUNETTES", "SOUAFLE", "GRYFFONDOR", "SERPENTARD", "POUFFSOUFFLE", "SERDAIGLE", "QUIDDITCH", "COGNARD", "POTION", "GRIMOIRE", "MCGONAGALL", "MOLDU", "DIVINATION", "ARAGOG", "ALBUS", "DOBBY", "MALEFOY", "NEVILLE", "LUNA", "GINNY", "FRED", "GEORGE", "PERCY", "ARTHUR", "MOLLY", "SIRIUS", "REMUS", "LUPIN", "PATRONUS", "AZKABAN", "POUDLARD", "BASILIQUE", "CHAUDRON", "CHAPEAU", "PROPHETIE"]
+        };
+
+        const categoryConfig = {
+            "école": { icon: "✏️", class: "cls-ecole" },
+            "famille": { icon: "👨‍👩‍👧‍👦", class: "cls-famille" },
+            "maison": { icon: "🏠", class: "cls-maison" },
+            "nature": { icon: "🌳", class: "cls-nature" },
+            "animaux": { icon: "🐶", class: "cls-animaux" },
+            "métiers": { icon: "👷", class: "cls-metiers" },
+            "Harry Potter": { icon: "⚡", class: "cls-potter" }
+        };
+
+        let currentWord = "";
+        let guessedLetters = [];
+        let mistakes = 0;
+        let selectedCategory = "";
+
+        const catContainer = document.getElementById('categories-btns');
+        Object.keys(categories).forEach(cat => {
+            const btn = document.createElement('button');
+            const config = categoryConfig[cat];
+            
+            btn.className = `btn-category ${config.class}`;
+            
+            btn.innerHTML = `
+                <span class="cat-icon">${config.icon}</span>
+                <span class="cat-text">${cat.toUpperCase()}</span>
+            `;
+            
+            btn.onclick = () => startGame(cat);
+            catContainer.appendChild(btn);
+        });
+
+        function showSelection() {
+            document.getElementById('selection-screen').className = "screen active";
+            document.getElementById('game-screen').className = "screen";
+            document.getElementById('end-screen').className = "screen";
+        }
+
+        function startGame(cat) {
+            selectedCategory = cat;
+            const config = categoryConfig[cat];
+            document.getElementById('category-title').innerText = config.icon + " " + cat.toUpperCase();
+            initGame();
+            document.getElementById('selection-screen').className = "screen";
+            document.getElementById('game-screen').className = "screen active";
+        }
+
+        function initGame() {
+            const wordList = categories[selectedCategory];
+            currentWord = wordList[Math.floor(Math.random() * wordList.length)].toUpperCase();
+            guessedLetters = [];
+            mistakes = 0;
+            document.getElementById('wrong-letters-display').innerText = "";
+            drawHangman(0);
+            updateDisplay();
+            createKeyboard();
+        }
+
+        function createKeyboard() {
+            const keyboard = document.getElementById('keyboard');
+            keyboard.innerHTML = "";
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ-".split("").forEach(letter => {
+                const btn = document.createElement('button');
+                btn.innerText = letter;
+                btn.className = "key";
+                btn.onclick = () => handleGuess(letter, btn);
+                keyboard.appendChild(btn);
+            });
+        }
+
+        function handleGuess(letter, btn) {
+            if (btn.classList.contains('used')) return;
+            btn.classList.add('used');
+
+            if (currentWord.includes(letter)) {
+                guessedLetters.push(letter);
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+                updateDisplay();
+                checkWin();
+            } else {
+                mistakes++;
+                showCross();
+                document.getElementById('wrong-letters-display').innerText += letter + " ";
+                drawHangman(mistakes);
+                if (mistakes >= 10) endGame(false);
+            }
+        }
+
+        function showCross() {
+            const overlay = document.getElementById('overlay');
+            overlay.style.display = "block";
+            setTimeout(() => { overlay.style.display = "none"; }, 500);
+        }
+
+        function updateDisplay() {
+            const display = currentWord.split("").map(l => (guessedLetters.includes(l) || l === "-" ? l : "_")).join(" ");
+            document.getElementById('word-display').innerText = display;
+        }
+
+        function checkWin() {
+            const win = currentWord.split("").every(l => guessedLetters.includes(l) || l === "-");
+            if (win) endGame(true);
+        }
+
+        function endGame(won) {
+            document.getElementById('game-screen').className = "screen";
+            document.getElementById('end-screen').className = "screen active";
+            const visual = document.getElementById('end-visual');
+            const msg = document.getElementById('end-message');
+            const reveal = document.getElementById('reveal-word');
+
+            if (won) {
+                visual.innerHTML = "🏆";
+                msg.innerText = "GAGNÉ !";
+                msg.style.color = "var(--success)";
+                reveal.innerText = "Tu as trouvé ! le mot était " + currentWord;
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+            } else {
+                visual.innerHTML = "<div class='skull'>💀</div>";
+                msg.innerText = "PERDU...";
+                msg.style.color = "var(--accent)";
+                reveal.innerText = "Le mot était : " + currentWord;
+                // Signal sonore supprimé comme demandé
+            }
+        }
+
+        function drawHangman(step) {
+            const canvas = document.getElementById('hangman-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#2c3e50";
+
+            const steps = [
+                () => { ctx.beginPath(); ctx.moveTo(20, 180); ctx.lineTo(180, 180); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(50, 180); ctx.lineTo(50, 20); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(50, 20); ctx.lineTo(130, 20); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(130, 20); ctx.lineTo(130, 40); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.arc(130, 60, 20, 0, Math.PI * 2); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(130, 80); ctx.lineTo(130, 130); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(130, 90); ctx.lineTo(100, 110); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(130, 90); ctx.lineTo(160, 110); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(130, 130); ctx.lineTo(100, 160); ctx.stroke(); },
+                () => { ctx.beginPath(); ctx.moveTo(130, 130); ctx.lineTo(160, 160); ctx.stroke(); }
+            ];
+
+            for (let i = 0; i < step; i++) {
+                if(steps[i]) steps[i]();
+            }
+        }
+    </script>
+</body>
+</html>

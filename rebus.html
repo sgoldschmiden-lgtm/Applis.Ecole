@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Rébus</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+		/* Bouton de changement de jeu */
+        .btn-change-game {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #9b59b6; /* Un violet pédagogique */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.2s, transform 0.1s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-change-game:hover {
+            background-color: #8e44ad;
+        }
+        
+        .btn-change-game:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-change-game i {
+            margin-right: 8px;
+        }
+		
+        :root {
+            --primary: #4A90E2;
+            --dark: #2C3E50;
+            --light: #ECF0F1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #timer {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #E74C3C;
+            margin-bottom: 10px;
+        }
+
+        #rebus-display {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            min-height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .rebus-img {
+            max-height: 100px;
+            width: auto;
+        }
+
+        #user-input {
+            font-size: 1.5rem;
+            height: 40px;
+            border-bottom: 3px solid var(--primary);
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Clavier Virtuel */
+        #keyboard {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+            width: 100%;
+        }
+
+        .key {
+            padding: 15px 5px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .key:active { background: var(--primary); color: white; }
+
+        .key-del { grid-column: span 2; background: #fab1a0; }
+        .key-enter { grid-column: span 2; background: #55efc4; }
+
+        /* Ecran Final */
+        #overlay {
+            display: none;
+            position: fixed;
+            top:0; left:0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #final-score { font-size: 5rem; color: #f1c40f; }
+    </style>
+</head>
+<body>
+	<a href="index.html" class="btn btn-change-game">
+        <i class="fas fa-exchange-alt"></i> Changer de jeu
+    </a>  
+	<div id="game-container">
+		<div id="timer">02:00</div>
+		<div id="score-live">Score: 0</div>
+		
+		<div id="rebus-display">
+			</div>
+
+		<div id="user-input"></div>
+
+		<div id="keyboard">
+			</div>
+	</div>
+
+	<div id="overlay">
+		<h1>Bravo !</h1>
+		<p>Ton score final :</p>
+		<div id="final-score">0</div>
+		<button onclick="location.reload()" style="padding: 10px 20px; margin-top: 20px; cursor:pointer;">Rejouer</button>
+	</div>
+
+<script>
+    // --- CONFIGURATION : LISTE CORRIGÉE ---
+    const rebusData = [
+        { images: ["chat.png", "pot.png"], answer: "CHAPEAU" },
+        { images: ["porte.png", "feuille.png"], answer: "PORTEFEUILLE" },
+        { images: ["car.png", "hotte.png"], answer: "CAROTTE" },
+        { images: ["car.png", "table.png"], answer: "CARTABLE" },
+        { images: ["pas.png", "pied.png"], answer: "PAPIER" },
+        { images: ["fee.png", "lit.png", "scie.png", "the.png"], answer: "FELICITER" },
+        { images: ["pont.png", "pied.png"], answer: "POMPIER" },
+        { images: ["scie.png", "reine.png"], answer: "SIRENE" },
+        { images: ["scie.png", "tronc.png"], answer: "CITRON" },
+        { images: ["pas.png", "riz.png"], answer: "PARIS" },
+        { images: ["dos.png", "mie.png", "nez.png"], answer: "DOMINER" },
+        { images: ["car.png", "four.png"], answer: "CARREFOUR" },
+        { images: ["poire.png", "eau.png"], answer: "POIREAU" },
+        { images: ["clef.png", "rond.png"], answer: "CLAIRON" },
+        { images: ["verre.png", "nid.png"], answer: "VERNIS" },
+        { images: ["pain.png", "seau.png"], answer: "PINCEAU" },
+        { images: ["chat.png", "lait.png"], answer: "CHALET" },
+        { images: ["pas.png", "lait.png"], answer: "PALAIS" },
+        { images: ["pas.png", "rat.png", "pluie.png"], answer: "PARAPLUIE" },
+        { images: ["de.png", "pas.png", "nez.png"], answer: "DEPANNER" },
+        { images: ["de.png", "fer.png"], answer: "DEFAIRE" },
+        { images: ["cerf.png", "paon.png"], answer: "SERPENT" },
+        { images: ["de.png", "scie.png", "nez.png"], answer: "DESSINER" },
+        { images: ["lit.png", "corne.png"], answer: "LICORNE" },
+        { images: ["pas.png", "pas.png"], answer: "PAPA" },
+        { images: ["seau.png", "nez.png"], answer: "SONNER" },
+        { images: ["scie.png", "nez.png", "mat.png"], answer: "CINEMA" },
+        { images: ["haie.png", "noeud.png", "mie.png"], answer: "ENNEMI" },
+        { images: ["pas.png", "pis.png"], answer: "PAPI" },
+        { images: ["mat.png", "mie.png"], answer: "MAMIE" },
+        { images: ["riz.png", "dos.png"], answer: "RIDEAU" },
+        { images: ["four.png", "mie.png"], answer: "FOURMI" },
+        { images: ["rat.png", "pelle.png"], answer: "RAPPEL" },
+        { images: ["balle.png", "haie.png"], answer: "BALAI" },
+		{ images: ["haie.png", "lait.png", "phaon.png"], answer: "ELEPHANT" },
+		{ images: ["chat.png", "pelle.png"], answer: "CHAPELLE" },
+		{ images: ["tour.png", "noeud.png", "vis.png"], answer: "TOURNEVIS" },
+		{ images: ["pis.png", "sang.png", "lit.png"], answer: "PISSENLIT" },
+		{ images: ["dos.png", "mine.png", "eau.png"], answer: "DOMINO" },
+		{ images: ["ane.png", "ane.png", "as.png"], answer: "ANANAS" },
+		{ images: ["pis.png", "ane.png", "eau.png"], answer: "PIANO" },
+		{ images: ["chat.png", "riz.png", "eau.png"], answer: "CHARRIOT" },
+		{ images: ["phare.png", "mat.png", "scie.png"], answer: "PHARMACIE" },
+		{ images: ["table.png", "eau.png"], answer: "TABLEAU" },
+        { images: ["pot.png", "lit.png"], answer: "POLI" } // Pas de virgule sur le dernier
+    ];
+
+    let currentRebusIndex = 0;
+    let score = 0;
+    let timeLeft = 120;
+    let currentInput = "";
+    let gameActive = true;
+
+    const display = document.getElementById('rebus-display');
+    const inputDiv = document.getElementById('user-input');
+    const timerDiv = document.getElementById('timer');
+    const scoreDiv = document.getElementById('score-live');
+
+    const alphabet = "AZERTYUIOPQSDFGHJKLMWXCVBN".split("");
+    const keyboard = document.getElementById('keyboard');
+
+    function initKeyboard() {
+        keyboard.innerHTML = "";
+        alphabet.forEach(letter => {
+            const btn = document.createElement('div');
+            btn.className = 'key';
+            btn.textContent = letter;
+            btn.onclick = () => addLetter(letter);
+            keyboard.appendChild(btn);
+        });
+
+        const delBtn = document.createElement('div');
+        delBtn.className = 'key key-del';
+        delBtn.textContent = 'EFFACER';
+        delBtn.onclick = () => deleteLetter();
+        keyboard.appendChild(delBtn);
+
+        const valBtn = document.createElement('div');
+        valBtn.className = 'key key-enter';
+        valBtn.textContent = 'OK';
+        valBtn.onclick = () => checkAnswer();
+        keyboard.appendChild(valBtn);
+    }
+
+    // Support du clavier physique pour plus de confort
+    window.addEventListener('keydown', (e) => {
+        if (!gameActive) return;
+        const key = e.key.toUpperCase();
+        if (alphabet.includes(key)) addLetter(key);
+        else if (e.key === "Backspace") deleteLetter();
+        else if (e.key === "Enter") checkAnswer();
+    });
+
+    function loadRebus() {
+        if (!gameActive) return;
+        currentInput = "";
+        updateDisplay();
+        const randomIndex = Math.floor(Math.random() * rebusData.length);
+        const rebus = rebusData[randomIndex];
+        currentRebusIndex = randomIndex;
+
+        display.innerHTML = "";
+        rebus.images.forEach(imgName => {
+            const img = document.createElement('img');
+            img.src = `rebus/${imgName}`;
+            img.className = 'rebus-img';
+            img.onerror = () => { img.alt = "[Image manquante]"; }; // Sécurité si image oubliée
+            display.appendChild(img);
+        });
+    }
+
+    function addLetter(l) {
+        if (currentInput.length < 20) {
+            currentInput += l;
+            updateDisplay();
+        }
+    }
+
+    function deleteLetter() {
+        currentInput = currentInput.slice(0, -1);
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        inputDiv.textContent = currentInput;
+    }
+
+    function checkAnswer() {
+        const correct = rebusData[currentRebusIndex].answer.toUpperCase();
+        if (currentInput === correct) {
+            score++;
+            scoreDiv.textContent = `Score: ${score}`;
+            loadRebus();
+        } else {
+            inputDiv.style.color = 'red';
+            setTimeout(() => { 
+                inputDiv.style.color = 'black'; 
+                currentInput = ""; 
+                updateDisplay();
+            }, 500);
+        }
+    }
+
+    const countdown = setInterval(() => {
+        timeLeft--;
+        let mins = Math.floor(timeLeft / 60);
+        let secs = timeLeft % 60;
+        timerDiv.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 0) {
+            clearInterval(countdown);
+            endGame();
+        }
+    }, 1000);
+
+    function endGame() {
+        gameActive = false;
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('final-score').textContent = score;
+        
+        const duration = 5 * 1000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: 10,
+                angle: 60,
+                spread: 70,
+                origin: { x: 0, y: 0.6 }
+            });
+            confetti({
+                particleCount: 10,
+                angle: 120,
+                spread: 70,
+                origin: { x: 1, y: 0.6 }
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
+
+    initKeyboard();
+    loadRebus();
+</script>
+
+</body>
+</html>
